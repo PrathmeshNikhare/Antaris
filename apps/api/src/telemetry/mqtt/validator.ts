@@ -13,18 +13,38 @@ const METRIC_BOUNDS: Record<string, { min: number; max: number }> = {
   wind_speed: { min: 0, max: 100 },
   atmospheric_pressure: { min: 850, max: 1100 },
   power_output_kw: { min: 0, max: 600 },
+  grid_load_kw: { min: 0, max: 600 },
+  thermal_load_kw: { min: 0, max: 300 },
+  airflow_cfm: { min: 0, max: 10000 },
   fuel_consumption_lph: { min: 0, max: 150 },
+  oil_pressure_bar: { min: 0, max: 12 },
   state_of_charge_pct: { min: 0, max: 100 },
   voltage: { min: 0, max: 650 },
+  charge_rate_kw: { min: -150, max: 150 },
   water_temperature: { min: -10, max: 80 },
   flow_rate_lpm: { min: 0, max: 300 },
+  storage_level_liters: { min: 0, max: 60000 },
   indoor_temperature: { min: 0, max: 40 },
   solar_irradiance: { min: 0, max: 1400 },
   solar_generation_kw: { min: 0, max: 100 },
   salinity_ppm: { min: 0, max: 1000 },
+  snr_db: { min: 0, max: 50 },
+  packet_loss_pct: { min: 0, max: 100 },
+  latency_ms: { min: 10, max: 10000 },
+  daily_fuel_burn_liters: { min: 0, max: 2500 },
+  water_consumption_lpd: { min: 0, max: 5000 },
+  ration_burn_rate: { min: 0, max: 100 },
 };
 
-const VALID_SOURCES: TelemetrySource[] = ["SIMULATOR", "MQTT", "API", "MANUAL"];
+const VALID_SOURCES: TelemetrySource[] = [
+  "SIMULATOR",
+  "MQTT",
+  "API",
+  "MANUAL",
+  "SIMULATED",
+  "EXTERNAL",
+  "MEASURED",
+];
 
 /**
  * Validates canonical telemetry envelope per telemetry.md.
@@ -59,6 +79,18 @@ export function validateTelemetryEnvelope(payload: unknown): ValidationResult {
     errors.push("Missing required field: timestamp");
   }
 
+  // Provenance validation: Do not silently convert invalid source to SIMULATOR
+  if (!p.source || !VALID_SOURCES.includes(p.source as TelemetrySource)) {
+    errors.push(
+      `Missing or invalid required field: source. Valid sources: ${VALID_SOURCES.join(", ")}`
+    );
+  }
+
+  // Sequence validation if provided
+  if (p.sequence !== undefined && (typeof p.sequence !== "number" || p.sequence < 0 || !Number.isInteger(p.sequence))) {
+    errors.push("Invalid sequence number: must be a non-negative integer");
+  }
+
   const date = new Date(p.timestamp as string);
   if (Number.isNaN(date.getTime())) {
     errors.push("Invalid timestamp format");
@@ -86,9 +118,7 @@ export function validateTelemetryEnvelope(payload: unknown): ValidationResult {
     }
   }
 
-  const source: TelemetrySource = VALID_SOURCES.includes(p.source as TelemetrySource)
-    ? (p.source as TelemetrySource)
-    : "SIMULATOR";
+  const source = p.source as TelemetrySource;
 
   const ASSET_ID_ALIASES: Record<string, string> = {
     "maitri-gen-01": "asset-maitri-gen-1",
@@ -145,6 +175,8 @@ export function validateTelemetryEnvelope(payload: unknown): ValidationResult {
     timestamp: date,
     source,
     quality,
+    sequence: p.sequence,
+    ingestedAt: new Date(),
   };
 
   return { valid: true, point };

@@ -9,7 +9,7 @@ describe("Health endpoints", () => {
     const res = await request(app).get("/health");
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("ok");
-    expect(res.body.version).toBe("0.1.0");
+    expect(res.body.version).toBe("0.2.0");
     expect(res.body).toHaveProperty("uptime");
     expect(res.body).toHaveProperty("timestamp");
   });

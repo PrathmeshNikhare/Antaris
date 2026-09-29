@@ -3,12 +3,25 @@ import { validateTelemetryEnvelope } from "./validator";
 import { TelemetryRepository } from "../../repositories";
 import type { TelemetryPoint } from "@maitri-bharati/shared";
 
+export interface StreamSequenceState {
+  lastSequence: number;
+  count: number;
+  duplicateCount: number;
+  gapCount: number;
+  outOfOrderCount: number;
+  seenSequences: Set<number>;
+}
+
 export interface IngestStats {
   totalReceived: number;
   totalPersisted: number;
   totalSuspect: number;
   totalInvalid: number;
+  duplicateCount: number;
+  gapCount: number;
+  outOfOrderCount: number;
   lastIngestedAt?: Date;
+  activeStreamsCount: number;
 }
 
 export type IngestListener = (point: TelemetryPoint, topic: string) => void;
@@ -21,7 +34,12 @@ export class TelemetryIngestService {
     totalPersisted: 0,
     totalSuspect: 0,
     totalInvalid: 0,
+    duplicateCount: 0,
+    gapCount: 0,
+    outOfOrderCount: 0,
+    activeStreamsCount: 0,
   };
+  private streamStates: Map<string, StreamSequenceState> = new Map();
   private listeners: IngestListener[] = [];
   private isSubscribed = false;
 
@@ -67,6 +85,63 @@ export class TelemetryIngestService {
         this.stats.totalSuspect++;
       }
 
+      // ─── Per-Stream Sequence Handling & Deduplication ─────────
+      if (point.sequence !== undefined) {
+        const streamKey = `${point.stationId}:${point.assetId || "station"}:${point.metric}`;
+        let stream = this.streamStates.get(streamKey);
+
+        if (!stream) {
+          stream = {
+            lastSequence: point.sequence,
+            count: 1,
+            duplicateCount: 0,
+            gapCount: 0,
+            outOfOrderCount: 0,
+            seenSequences: new Set([point.sequence]),
+          };
+          this.streamStates.set(streamKey, stream);
+          this.stats.activeStreamsCount = this.streamStates.size;
+        } else {
+          stream.count++;
+
+          // 1. Duplicate detection
+          if (stream.seenSequences.has(point.sequence)) {
+            this.stats.duplicateCount++;
+            stream.duplicateCount++;
+            console.warn(`[ingest] Deduplicated sequence ${point.sequence} on stream ${streamKey}`);
+            return null; // Deduplicate: do not persist duplicate packet
+          }
+
+          // 2. Out-of-order detection
+          if (point.sequence < stream.lastSequence) {
+            this.stats.outOfOrderCount++;
+            stream.outOfOrderCount++;
+            console.warn(
+              `[ingest] Out-of-order packet: sequence ${point.sequence} < lastSeen ${stream.lastSequence} on stream ${streamKey}`
+            );
+          } else if (point.sequence > stream.lastSequence + 1) {
+            // 3. Gap detection
+            const gap = point.sequence - stream.lastSequence - 1;
+            this.stats.gapCount += gap;
+            stream.gapCount += gap;
+            console.warn(
+              `[ingest] Sequence gap of ${gap} missing packets on stream ${streamKey} (${stream.lastSequence} -> ${point.sequence})`
+            );
+          }
+
+          stream.seenSequences.add(point.sequence);
+          if (point.sequence > stream.lastSequence) {
+            stream.lastSequence = point.sequence;
+          }
+
+          // Keep bounded memory for seen sequence buffer
+          if (stream.seenSequences.size > 1000) {
+            const arr = Array.from(stream.seenSequences).sort((a, b) => a - b);
+            stream.seenSequences = new Set(arr.slice(arr.length - 500));
+          }
+        }
+      }
+
       // Persist to TimescaleDB
       const persisted = await this.telemRepo.insert(point);
       this.stats.totalPersisted++;
@@ -95,5 +170,19 @@ export class TelemetryIngestService {
 
   getStats(): IngestStats {
     return { ...this.stats };
+  }
+
+  getStreamStats(): Record<string, Omit<StreamSequenceState, "seenSequences">> {
+    const res: Record<string, Omit<StreamSequenceState, "seenSequences">> = {};
+    for (const [key, val] of this.streamStates.entries()) {
+      res[key] = {
+        lastSequence: val.lastSequence,
+        count: val.count,
+        duplicateCount: val.duplicateCount,
+        gapCount: val.gapCount,
+        outOfOrderCount: val.outOfOrderCount,
+      };
+    }
+    return res;
   }
 }

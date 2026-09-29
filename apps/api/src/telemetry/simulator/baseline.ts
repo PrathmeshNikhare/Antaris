@@ -16,7 +16,11 @@ export interface SensorConfig {
 }
 
 export const SENSOR_DEFINITIONS: SensorConfig[] = [
-  // ─── Maitri Station Sensors ──────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════
+  // ─── MAITRI STATION SENSORS ───────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════
+
+  // 1. Environment
   {
     stationId: "station-maitri",
     metric: "ambient_temperature",
@@ -46,9 +50,11 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     topic: "stations/station-maitri/environment",
     baseValue: 985.0,
     noiseStdDev: 1.2,
-    minPlausible: 900.0,
-    maxPlausible: 1050.0,
+    minPlausible: 850.0,
+    maxPlausible: 1100.0,
   },
+
+  // 2. Primary Diesel Generator (125 kVA)
   {
     stationId: "station-maitri",
     assetId: "asset-maitri-gen-1",
@@ -66,11 +72,11 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     metric: "power_output_kw",
     unit: "kW",
     topic: "stations/station-maitri/energy",
-    baseValue: 145.0,
-    noiseStdDev: 4.0,
-    diurnalAmplitude: 15.0,
+    baseValue: 105.0,
+    noiseStdDev: 3.5,
+    diurnalAmplitude: 12.0,
     minPlausible: 0.0,
-    maxPlausible: 500.0,
+    maxPlausible: 150.0,
   },
   {
     stationId: "station-maitri",
@@ -78,11 +84,24 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     metric: "fuel_consumption_lph",
     unit: "L/h",
     topic: "stations/station-maitri/energy",
-    baseValue: 31.0,
-    noiseStdDev: 1.0,
+    baseValue: 28.5,
+    noiseStdDev: 0.9,
     minPlausible: 0.0,
-    maxPlausible: 120.0,
+    maxPlausible: 60.0,
   },
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-gen-1",
+    metric: "oil_pressure_bar",
+    unit: "bar",
+    topic: "stations/station-maitri/telemetry/asset-maitri-gen-1",
+    baseValue: 4.6,
+    noiseStdDev: 0.15,
+    minPlausible: 0.0,
+    maxPlausible: 10.0,
+  },
+
+  // 3. Battery System (150 kWh)
   {
     stationId: "station-maitri",
     assetId: "asset-maitri-bat-1",
@@ -107,6 +126,55 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
   },
   {
     stationId: "station-maitri",
+    assetId: "asset-maitri-bat-1",
+    metric: "charge_rate_kw",
+    unit: "kW",
+    topic: "stations/station-maitri/energy",
+    baseValue: 8.5,
+    noiseStdDev: 1.0,
+    minPlausible: -60.0,
+    maxPlausible: 60.0,
+  },
+
+  // 4. HVAC
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-hvac-1",
+    metric: "indoor_temperature",
+    unit: "degC",
+    topic: "stations/station-maitri/telemetry/asset-maitri-hvac-1",
+    baseValue: 21.2,
+    noiseStdDev: 0.4,
+    minPlausible: 5.0,
+    maxPlausible: 35.0,
+  },
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-hvac-1",
+    metric: "thermal_load_kw",
+    unit: "kW",
+    topic: "stations/station-maitri/telemetry/asset-maitri-hvac-1",
+    baseValue: 42.0,
+    noiseStdDev: 2.0,
+    diurnalAmplitude: 5.0,
+    minPlausible: 0.0,
+    maxPlausible: 120.0,
+  },
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-hvac-1",
+    metric: "airflow_cfm",
+    unit: "CFM",
+    topic: "stations/station-maitri/telemetry/asset-maitri-hvac-1",
+    baseValue: 3450.0,
+    noiseStdDev: 50.0,
+    minPlausible: 500.0,
+    maxPlausible: 7000.0,
+  },
+
+  // 5. Water System (Priyadarshini Lake pump & storage)
+  {
+    stationId: "station-maitri",
     assetId: "asset-maitri-water-1",
     metric: "water_temperature",
     unit: "degC",
@@ -125,21 +193,131 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     baseValue: 42.0,
     noiseStdDev: 1.8,
     minPlausible: 0.0,
-    maxPlausible: 200.0,
+    maxPlausible: 150.0,
   },
   {
     stationId: "station-maitri",
-    assetId: "asset-maitri-hvac-1",
-    metric: "indoor_temperature",
-    unit: "degC",
-    topic: "stations/station-maitri/telemetry/asset-maitri-hvac-1",
-    baseValue: 21.2,
-    noiseStdDev: 0.4,
-    minPlausible: 5.0,
-    maxPlausible: 35.0,
+    assetId: "asset-maitri-water-1",
+    metric: "storage_level_liters",
+    unit: "L",
+    topic: "stations/station-maitri/telemetry/asset-maitri-water-1",
+    baseValue: 12400.0,
+    noiseStdDev: 80.0,
+    minPlausible: 0.0,
+    maxPlausible: 20000.0,
   },
 
-  // ─── Bharati Station Sensors ─────────────────────────────────────
+  // 6. Communications (Satellite Terminal)
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-comm-1",
+    metric: "snr_db",
+    unit: "dB",
+    topic: "stations/station-maitri/telemetry/asset-maitri-comm-1",
+    baseValue: 16.4,
+    noiseStdDev: 0.6,
+    minPlausible: 0.0,
+    maxPlausible: 35.0,
+  },
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-comm-1",
+    metric: "packet_loss_pct",
+    unit: "%",
+    topic: "stations/station-maitri/telemetry/asset-maitri-comm-1",
+    baseValue: 1.2,
+    noiseStdDev: 0.4,
+    minPlausible: 0.0,
+    maxPlausible: 100.0,
+  },
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-comm-1",
+    metric: "latency_ms",
+    unit: "ms",
+    topic: "stations/station-maitri/telemetry/asset-maitri-comm-1",
+    baseValue: 680.0,
+    noiseStdDev: 25.0,
+    minPlausible: 100.0,
+    maxPlausible: 3000.0,
+  },
+
+  // 7. Energy Grid Load & Logistics
+  {
+    stationId: "station-maitri",
+    metric: "grid_load_kw",
+    unit: "kW",
+    topic: "stations/station-maitri/energy",
+    baseValue: 94.5,
+    noiseStdDev: 3.0,
+    diurnalAmplitude: 14.0,
+    minPlausible: 10.0,
+    maxPlausible: 250.0,
+  },
+  {
+    stationId: "station-maitri",
+    metric: "daily_fuel_burn_liters",
+    unit: "L",
+    topic: "stations/station-maitri/logistics",
+    baseValue: 680.0,
+    noiseStdDev: 15.0,
+    minPlausible: 100.0,
+    maxPlausible: 1500.0,
+  },
+  {
+    stationId: "station-maitri",
+    metric: "water_consumption_lpd",
+    unit: "L/day",
+    topic: "stations/station-maitri/logistics",
+    baseValue: 1180.0,
+    noiseStdDev: 25.0,
+    minPlausible: 200.0,
+    maxPlausible: 3000.0,
+  },
+
+  // 8. Solar PV Array (30 kW)
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-sol-1",
+    metric: "power_output_kw",
+    unit: "kW",
+    topic: "stations/station-maitri/energy",
+    baseValue: 18.0,
+    noiseStdDev: 1.5,
+    diurnalAmplitude: 12.0,
+    minPlausible: 0.0,
+    maxPlausible: 40.0,
+  },
+
+  // 9. Standby Generator (125 kVA)
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-gen-2",
+    metric: "power_output_kw",
+    unit: "kW",
+    topic: "stations/station-maitri/energy",
+    baseValue: 0.0,
+    noiseStdDev: 0.0,
+    minPlausible: 0.0,
+    maxPlausible: 150.0,
+  },
+  {
+    stationId: "station-maitri",
+    assetId: "asset-maitri-gen-2",
+    metric: "temperature",
+    unit: "degC",
+    topic: "stations/station-maitri/telemetry/asset-maitri-gen-2",
+    baseValue: 42.0,
+    noiseStdDev: 0.5,
+    minPlausible: 0.0,
+    maxPlausible: 120.0,
+  },
+
+  // ══════════════════════════════════════════════════════════════════
+  // ─── BHARATI STATION SENSORS ──────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════
+
+  // 1. Environment
   {
     stationId: "station-bharati",
     metric: "ambient_temperature",
@@ -173,6 +351,8 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     minPlausible: 0.0,
     maxPlausible: 1200.0,
   },
+
+  // 2. CHP Unit 1 & Micro-Wind
   {
     stationId: "station-bharati",
     assetId: "asset-bharati-chp-1",
@@ -190,11 +370,55 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     metric: "power_output_kw",
     unit: "kW",
     topic: "stations/station-bharati/energy",
-    baseValue: 155.0,
-    noiseStdDev: 4.5,
-    diurnalAmplitude: 18.0,
+    baseValue: 135.0,
+    noiseStdDev: 4.0,
+    diurnalAmplitude: 15.0,
     minPlausible: 0.0,
-    maxPlausible: 500.0,
+    maxPlausible: 200.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-chp-1",
+    metric: "fuel_consumption_lph",
+    unit: "L/h",
+    topic: "stations/station-bharati/energy",
+    baseValue: 34.0,
+    noiseStdDev: 1.1,
+    minPlausible: 0.0,
+    maxPlausible: 75.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-chp-1",
+    metric: "oil_pressure_bar",
+    unit: "bar",
+    topic: "stations/station-bharati/telemetry/asset-bharati-chp-1",
+    baseValue: 5.1,
+    noiseStdDev: 0.12,
+    minPlausible: 0.0,
+    maxPlausible: 10.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-chp-2",
+    metric: "power_output_kw",
+    unit: "kW",
+    topic: "stations/station-bharati/energy",
+    baseValue: 0.0,
+    noiseStdDev: 0.0,
+    minPlausible: 0.0,
+    maxPlausible: 200.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-chp-2",
+    metric: "temperature",
+    unit: "degC",
+    topic: "stations/station-bharati/telemetry/asset-bharati-chp-2",
+    baseValue: 42.0,
+    noiseStdDev: 0.5,
+    minPlausible: 0.0,
+    maxPlausible: 120.0,
   },
   {
     stationId: "station-bharati",
@@ -206,8 +430,10 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     noiseStdDev: 1.5,
     diurnalAmplitude: 6.0,
     minPlausible: 0.0,
-    maxPlausible: 80.0,
+    maxPlausible: 35.0,
   },
+
+  // 3. Battery System (200 kWh LiFePO4)
   {
     stationId: "station-bharati",
     assetId: "asset-bharati-bat-1",
@@ -219,6 +445,30 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     minPlausible: 0.0,
     maxPlausible: 100.0,
   },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-bat-1",
+    metric: "voltage",
+    unit: "V",
+    topic: "stations/station-bharati/energy",
+    baseValue: 412.0,
+    noiseStdDev: 1.2,
+    minPlausible: 0.0,
+    maxPlausible: 600.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-bat-1",
+    metric: "charge_rate_kw",
+    unit: "kW",
+    topic: "stations/station-bharati/energy",
+    baseValue: 12.0,
+    noiseStdDev: 1.2,
+    minPlausible: -80.0,
+    maxPlausible: 80.0,
+  },
+
+  // 4. Reverse Osmosis Desalination
   {
     stationId: "station-bharati",
     assetId: "asset-bharati-ro-1",
@@ -239,8 +489,21 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     baseValue: 48.0,
     noiseStdDev: 2.0,
     minPlausible: 0.0,
-    maxPlausible: 200.0,
+    maxPlausible: 150.0,
   },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-ro-1",
+    metric: "storage_level_liters",
+    unit: "L",
+    topic: "stations/station-bharati/telemetry/asset-bharati-ro-1",
+    baseValue: 18200.0,
+    noiseStdDev: 110.0,
+    minPlausible: 0.0,
+    maxPlausible: 25000.0,
+  },
+
+  // 5. HVAC
   {
     stationId: "station-bharati",
     assetId: "asset-bharati-hvac-1",
@@ -251,6 +514,97 @@ export const SENSOR_DEFINITIONS: SensorConfig[] = [
     noiseStdDev: 0.3,
     minPlausible: 5.0,
     maxPlausible: 35.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-hvac-1",
+    metric: "thermal_load_kw",
+    unit: "kW",
+    topic: "stations/station-bharati/telemetry/asset-bharati-hvac-1",
+    baseValue: 48.0,
+    noiseStdDev: 2.2,
+    diurnalAmplitude: 6.0,
+    minPlausible: 0.0,
+    maxPlausible: 140.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-hvac-1",
+    metric: "airflow_cfm",
+    unit: "CFM",
+    topic: "stations/station-bharati/telemetry/asset-bharati-hvac-1",
+    baseValue: 3950.0,
+    noiseStdDev: 60.0,
+    minPlausible: 500.0,
+    maxPlausible: 8000.0,
+  },
+
+  // 6. Communications (Polar Ground Station)
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-ground-1",
+    metric: "snr_db",
+    unit: "dB",
+    topic: "stations/station-bharati/telemetry/asset-bharati-ground-1",
+    baseValue: 18.2,
+    noiseStdDev: 0.5,
+    minPlausible: 0.0,
+    maxPlausible: 35.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-ground-1",
+    metric: "packet_loss_pct",
+    unit: "%",
+    topic: "stations/station-bharati/telemetry/asset-bharati-ground-1",
+    baseValue: 0.8,
+    noiseStdDev: 0.3,
+    minPlausible: 0.0,
+    maxPlausible: 100.0,
+  },
+  {
+    stationId: "station-bharati",
+    assetId: "asset-bharati-ground-1",
+    metric: "latency_ms",
+    unit: "ms",
+    topic: "stations/station-bharati/telemetry/asset-bharati-ground-1",
+    baseValue: 620.0,
+    noiseStdDev: 20.0,
+    minPlausible: 100.0,
+    maxPlausible: 3000.0,
+  },
+
+  // 7. Grid Load & Logistics
+  {
+    stationId: "station-bharati",
+    metric: "grid_load_kw",
+    unit: "kW",
+    topic: "stations/station-bharati/energy",
+    baseValue: 108.0,
+    noiseStdDev: 3.5,
+    diurnalAmplitude: 16.0,
+    minPlausible: 15.0,
+    maxPlausible: 300.0,
+  },
+  {
+    stationId: "station-bharati",
+    metric: "daily_fuel_burn_liters",
+    unit: "L",
+    topic: "stations/station-bharati/logistics",
+    baseValue: 740.0,
+    noiseStdDev: 18.0,
+    minPlausible: 100.0,
+    maxPlausible: 1800.0,
+  },
+  {
+    stationId: "station-bharati",
+    metric: "water_consumption_lpd",
+    unit: "L/day",
+    topic: "stations/station-bharati/logistics",
+    baseValue: 1350.0,
+    noiseStdDev: 30.0,
+    minPlausible: 200.0,
+    maxPlausible: 3500.0,
   },
 ];
 
@@ -303,6 +657,7 @@ export class BaselineGenerator {
     // Round to 2 decimal places for clean sensor output
     value = Math.round(value * 100) / 100;
 
+    // Explicitly labeled provenance: SIMULATED (never presented as actual station measurements)
     const envelope: TelemetryEnvelope = {
       stationId: sensor.stationId,
       assetId: sensor.assetId,
@@ -310,7 +665,7 @@ export class BaselineGenerator {
       value,
       unit: sensor.unit,
       timestamp: simulatedDate.toISOString(),
-      source: "SIMULATOR" as TelemetrySource,
+      source: "SIMULATED" as TelemetrySource,
       quality,
       sequence,
     };

@@ -11,11 +11,17 @@ import {
   AlertRepository,
   ForecastRepository,
   SimulationRepository,
+  AssetDependencyRepository,
+  MetricDefinitionRepository,
+  MaintenanceRepository,
+  OperatorRepository,
+  AuditRepository,
+  TelemetryRepository,
 } from "../repositories";
 
 const app = createApp();
 
-describe("Phase 1: Station Model and Database", () => {
+describe("Phase 1: Station Model, Data-Model Hardening & Database", () => {
   beforeAll(async () => {
     await runMigrations();
     await runSeeds();
@@ -109,7 +115,7 @@ describe("Phase 1: Station Model and Database", () => {
     });
   });
 
-  describe("Exit Criterion 3: Seed data loads successfully across all 7 entities", () => {
+  describe("Exit Criterion 3: Seed data loads across inventory, alerts, forecasts, simulations", () => {
     it("loads inventory items with critical thresholds", async () => {
       const invRepo = new InventoryRepository();
       const items = await invRepo.findByStationId("station-maitri");
@@ -124,7 +130,7 @@ describe("Phase 1: Station Model and Database", () => {
       expect(fuel?.quantity).toBeGreaterThan(fuel?.minimumThreshold ?? 0);
     });
 
-    it("loads alerts with evidence payloads", async () => {
+    it("loads alerts with extended rule and impact evidence", async () => {
       const alertRepo = new AlertRepository();
       const alerts = await alertRepo.findByStationId("station-maitri");
 
@@ -156,6 +162,102 @@ describe("Phase 1: Station Model and Database", () => {
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("ok");
       expect(res.body.checks.database.status).toBe("ok");
+    });
+  });
+
+  describe("Exit Criterion 4: Phase 1 Data-Model Hardening", () => {
+    it("loads asset dependency chains and performs downstream impact queries", async () => {
+      const depRepo = new AssetDependencyRepository();
+      const allDeps = await depRepo.findAll();
+      expect(allDeps.length).toBeGreaterThanOrEqual(10);
+
+      // Downstream impact chain for Primary Generator 1
+      const downstream = await depRepo.findDownstream("asset-maitri-gen-1");
+      expect(downstream.length).toBeGreaterThanOrEqual(3);
+      expect(downstream).toContain("asset-maitri-bat-1");
+      expect(downstream).toContain("asset-maitri-hvac-1");
+
+      // HTTP endpoint
+      const res = await request(app).get("/api/dependencies/downstream/asset-maitri-gen-1");
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.totalImpacted).toBeGreaterThanOrEqual(3);
+      expect(res.body.data.downstreamAssetIds).toContain("asset-maitri-bat-1");
+    });
+
+    it("loads canonical metric definitions with plausible bounds", async () => {
+      const metricRepo = new MetricDefinitionRepository();
+      const defs = await metricRepo.findAll();
+      expect(defs.length).toBeGreaterThanOrEqual(10);
+
+      const tempDef = await metricRepo.findByMetric("temperature");
+      expect(tempDef).toBeDefined();
+      expect(tempDef?.canonicalUnit).toBe("degC");
+      expect(tempDef?.minPlausible).toBe(-40);
+      expect(tempDef?.maxPlausible).toBe(125);
+
+      const res = await request(app).get("/api/metrics");
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(10);
+    });
+
+    it("loads maintenance events history", async () => {
+      const maintRepo = new MaintenanceRepository();
+      const events = await maintRepo.findByStationId("station-maitri");
+      expect(events.length).toBeGreaterThanOrEqual(1);
+
+      const res = await request(app).get("/api/maintenance?stationId=station-maitri");
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("loads operator role records and audit events", async () => {
+      const opRepo = new OperatorRepository();
+      const ops = await opRepo.findAll();
+      expect(ops.length).toBeGreaterThanOrEqual(4);
+
+      const auditRepo = new AuditRepository();
+      const audits = await auditRepo.findAll();
+      expect(audits.length).toBeGreaterThanOrEqual(3);
+
+      const resAudit = await request(app).get("/api/audit");
+      expect(resAudit.status).toBe(200);
+      expect(resAudit.body.success).toBe(true);
+      expect(resAudit.body.data.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("persists telemetry sequence and explicit provenance into database", async () => {
+      const telemRepo = new TelemetryRepository();
+      const testPoint = {
+        id: `telem-test-${Date.now()}`,
+        stationId: "station-maitri",
+        assetId: "asset-maitri-gen-1",
+        metric: "test_hardened_metric",
+        value: 123.45,
+        unit: "kW",
+        timestamp: new Date(),
+        source: "SIMULATED" as const,
+        quality: "GOOD" as const,
+        sequence: 9942,
+        ingestedAt: new Date(),
+      };
+
+      const inserted = await telemRepo.insert(testPoint);
+      expect(inserted.sequence).toBe(9942);
+      expect(inserted.source).toBe("SIMULATED");
+      expect(inserted.ingestedAt).toBeDefined();
+
+      const retrieved = await telemRepo.findRecent({
+        stationId: "station-maitri",
+        metric: "test_hardened_metric",
+        limit: 1,
+      });
+
+      expect(retrieved.length).toBe(1);
+      expect(retrieved[0].sequence).toBe(9942);
+      expect(retrieved[0].source).toBe("SIMULATED");
     });
   });
 });

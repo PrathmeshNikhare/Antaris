@@ -1,52 +1,46 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { OverviewPage } from './features/overview/OverviewPage';
-import { InfrastructurePage } from './features/infrastructure/InfrastructurePage';
-import { EnergyPage } from './features/energy/EnergyPage';
-import { LogisticsPage } from './features/logistics/LogisticsPage';
-import { EnvironmentPage } from './features/environment/EnvironmentPage';
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { StationProvider } from "./context/StationContext";
+import { Sidebar } from "./components/Sidebar";
+import { TopBar } from "./components/TopBar";
 
-const NAV_ITEMS = [
-  { to: '/', label: 'Overview' },
-  { to: '/infrastructure', label: 'Infrastructure' },
-  { to: '/energy', label: 'Energy' },
-  { to: '/logistics', label: 'Logistics' },
-  { to: '/environment', label: 'Environment' },
-] as const;
+import { OverviewPage } from "./features/overview/OverviewPage";
+import { DigitalTwinPage } from "./features/twin/DigitalTwinPage";
+import { InfrastructurePage } from "./features/infrastructure/InfrastructurePage";
+import { EnergyPage } from "./features/energy/EnergyPage";
+import { LogisticsPage } from "./features/logistics/LogisticsPage";
+import { EnvironmentPage } from "./features/environment/EnvironmentPage";
+import { IntelligencePage } from "./features/intelligence/IntelligencePage";
+import { SimulationsPage } from "./features/simulations/SimulationsPage";
+import { ReportsPage } from "./features/reports/ReportsPage";
+import { AuditPage } from "./features/audit/AuditPage";
 
 export default function App(): React.JSX.Element {
   return (
     <BrowserRouter>
-      <div className="app-layout">
-        <aside className="app-sidebar">
-          <div className="app-sidebar__logo">Maitri–Bharati</div>
-          <nav>
-            <ul className="app-sidebar__nav">
-              {NAV_ITEMS.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.to === '/'}
-                    className={({ isActive }) =>
-                      `app-sidebar__link${isActive ? ' app-sidebar__link--active' : ''}`
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<OverviewPage />} />
-            <Route path="/infrastructure" element={<InfrastructurePage />} />
-            <Route path="/energy" element={<EnergyPage />} />
-            <Route path="/logistics" element={<LogisticsPage />} />
-            <Route path="/environment" element={<EnvironmentPage />} />
-          </Routes>
-        </main>
-      </div>
+      <StationProvider>
+        <div className="app-shell">
+          <Sidebar />
+          <div className="app-main-container">
+            <TopBar />
+            <main>
+              <Routes>
+                <Route path="/" element={<OverviewPage />} />
+                <Route path="/overview" element={<Navigate to="/" replace />} />
+                <Route path="/twin" element={<DigitalTwinPage />} />
+                <Route path="/infrastructure" element={<InfrastructurePage />} />
+                <Route path="/energy" element={<EnergyPage />} />
+                <Route path="/logistics" element={<LogisticsPage />} />
+                <Route path="/environment" element={<EnvironmentPage />} />
+                <Route path="/intelligence" element={<IntelligencePage />} />
+                <Route path="/simulations" element={<SimulationsPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/audit" element={<AuditPage />} />
+              </Routes>
+            </main>
+          </div>
+        </div>
+      </StationProvider>
     </BrowserRouter>
   );
 }

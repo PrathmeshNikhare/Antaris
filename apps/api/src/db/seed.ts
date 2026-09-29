@@ -178,6 +178,146 @@ export async function runSeeds(): Promise<void> {
     }
     console.log(`[seed] Seeded ${maitriBharatiSeedData.simulations.length} simulation runs.`);
 
+    // 8. Asset Dependencies
+    const { hardeningSeedData } = await import("./seeds/hardening_seeds");
+    for (const dep of hardeningSeedData.dependencies) {
+      await client.query(
+        `
+        INSERT INTO asset_dependencies (id, from_asset_id, to_asset_id, dependency_type, criticality, description, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (id) DO UPDATE SET
+          criticality = EXCLUDED.criticality,
+          description = EXCLUDED.description;
+      `,
+        [
+          dep.id,
+          dep.fromAssetId,
+          dep.toAssetId,
+          dep.dependencyType,
+          dep.criticality,
+          dep.description ?? null,
+          dep.createdAt ?? new Date(),
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.dependencies.length} asset dependencies.`);
+
+    // 9. Metric Definitions
+    for (const md of hardeningSeedData.metricDefinitions) {
+      await client.query(
+        `
+        INSERT INTO metric_definitions (
+          id, metric, canonical_unit, min_plausible, max_plausible,
+          warning_threshold_low, warning_threshold_high,
+          critical_threshold_low, critical_threshold_high,
+          expected_sampling_interval_seconds, aggregation_strategy,
+          allowed_asset_types, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT (id) DO UPDATE SET
+          canonical_unit = EXCLUDED.canonical_unit,
+          min_plausible = EXCLUDED.min_plausible,
+          max_plausible = EXCLUDED.max_plausible,
+          warning_threshold_low = EXCLUDED.warning_threshold_low,
+          warning_threshold_high = EXCLUDED.warning_threshold_high,
+          critical_threshold_low = EXCLUDED.critical_threshold_low,
+          critical_threshold_high = EXCLUDED.critical_threshold_high,
+          expected_sampling_interval_seconds = EXCLUDED.expected_sampling_interval_seconds,
+          aggregation_strategy = EXCLUDED.aggregation_strategy,
+          allowed_asset_types = EXCLUDED.allowed_asset_types;
+      `,
+        [
+          md.id,
+          md.metric,
+          md.canonicalUnit,
+          md.minPlausible,
+          md.maxPlausible,
+          md.warningThresholdLow ?? null,
+          md.warningThresholdHigh ?? null,
+          md.criticalThresholdLow ?? null,
+          md.criticalThresholdHigh ?? null,
+          md.expectedSamplingIntervalSeconds,
+          md.aggregationStrategy,
+          JSON.stringify(md.allowedAssetTypes),
+          md.createdAt ?? new Date(),
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.metricDefinitions.length} metric definitions.`);
+
+    // 10. Maintenance Events
+    for (const me of hardeningSeedData.maintenanceEvents) {
+      await client.query(
+        `
+        INSERT INTO maintenance_events (
+          id, station_id, asset_id, maintenance_type, scheduled_at, completed_at, notes, parts_used, result, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (id) DO UPDATE SET
+          completed_at = EXCLUDED.completed_at,
+          notes = EXCLUDED.notes,
+          parts_used = EXCLUDED.parts_used,
+          result = EXCLUDED.result;
+      `,
+        [
+          me.id,
+          me.stationId,
+          me.assetId,
+          me.maintenanceType,
+          me.scheduledAt,
+          me.completedAt ?? null,
+          me.notes ?? null,
+          JSON.stringify(me.partsUsed ?? []),
+          me.result,
+          me.createdAt ?? new Date(),
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.maintenanceEvents.length} maintenance events.`);
+
+    // 11. Operators
+    for (const op of hardeningSeedData.operators) {
+      await client.query(
+        `
+        INSERT INTO operators (id, username, full_name, role, station_id, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (id) DO UPDATE SET
+          full_name = EXCLUDED.full_name,
+          role = EXCLUDED.role,
+          station_id = EXCLUDED.station_id;
+      `,
+        [op.id, op.username, op.fullName, op.role, op.stationId ?? null, op.createdAt ?? new Date()]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.operators.length} operators.`);
+
+    // 12. Audit Events
+    for (const ae of hardeningSeedData.auditEvents) {
+      await client.query(
+        `
+        INSERT INTO audit_events (
+          id, operator_id, action, target_type, target_id, previous_state, new_state, result, correlation_id, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (id) DO UPDATE SET
+          result = EXCLUDED.result;
+      `,
+        [
+          ae.id,
+          ae.operatorId ?? null,
+          ae.action,
+          ae.targetType,
+          ae.targetId ?? null,
+          JSON.stringify(ae.previousState ?? {}),
+          JSON.stringify(ae.newState ?? {}),
+          ae.result,
+          ae.correlationId ?? null,
+          ae.createdAt ?? new Date(),
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.auditEvents.length} audit events.`);
+
     await client.query("COMMIT");
     console.log("[seed] All seeds executed successfully!");
   } catch (err) {

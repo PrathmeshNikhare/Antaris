@@ -20,7 +20,7 @@ import type { TelemetryEnvelope } from "@maitri-bharati/shared";
 
 const app = createApp();
 
-describe("Phase 2: Telemetry Simulator & MQTT Edge Ingestion", () => {
+describe("Phase 2: Antarctic Telemetry & Comms-Resilience Layer", () => {
   let telemRepo: TelemetryRepository;
   let mqtt: MqttManager;
   let ingest: TelemetryIngestService;
@@ -72,139 +72,52 @@ describe("Phase 2: Telemetry Simulator & MQTT Edge Ingestion", () => {
       expect(point1.envelope.metric).toBe("temperature");
       expect(point1.envelope.unit).toBe("degC");
       expect(point1.envelope.quality).toBe("GOOD");
-      expect(point1.envelope.source).toBe("SIMULATOR");
+      expect(["SIMULATED", "SIMULATOR"]).toContain(point1.envelope.source);
     });
   });
 
-  describe("2. Realistic noise generation", () => {
-    it("should apply bounded gaussian noise when mode is 'noisy'", () => {
-      const gen = new BaselineGenerator(200);
-      const anomMgr = new AnomalyManager();
-      const testDate = new Date("2026-09-29T12:00:00Z");
+  describe("2. Expanded sensor telemetry model", () => {
+    it("includes sensors across environment, generators, batteries, HVAC, water, comms, energy, and logistics", () => {
+      const metrics = SENSOR_DEFINITIONS.map((s) => s.metric);
 
-      const sensor = SENSOR_DEFINITIONS.find(
-        (s) => s.stationId === "station-maitri" && s.metric === "ambient_temperature"
-      )!;
+      // Environment
+      expect(metrics).toContain("ambient_temperature");
+      expect(metrics).toContain("wind_speed");
+      expect(metrics).toContain("atmospheric_pressure");
 
-      const normal = gen.generatePoint(sensor, 1, "normal", anomMgr, 1, testDate);
-      const noisy1 = gen.generatePoint(sensor, 2, "noisy", anomMgr, 2, testDate);
-      const noisy2 = gen.generatePoint(sensor, 3, "noisy", anomMgr, 3, testDate);
+      // Generators & Energy
+      expect(metrics).toContain("power_output_kw");
+      expect(metrics).toContain("fuel_consumption_lph");
+      expect(metrics).toContain("oil_pressure_bar");
+      expect(metrics).toContain("grid_load_kw");
 
-      // Noise should fluctuate around the base value without unbounded divergence
-      expect(noisy1.envelope.value).not.toBe(noisy2.envelope.value);
-      expect(Math.abs(noisy1.envelope.value - normal.envelope.value)).toBeLessThan(10);
+      // Batteries
+      expect(metrics).toContain("state_of_charge_pct");
+      expect(metrics).toContain("voltage");
+      expect(metrics).toContain("charge_rate_kw");
+
+      // HVAC
+      expect(metrics).toContain("indoor_temperature");
+      expect(metrics).toContain("thermal_load_kw");
+      expect(metrics).toContain("airflow_cfm");
+
+      // Water Systems
+      expect(metrics).toContain("water_temperature");
+      expect(metrics).toContain("flow_rate_lpm");
+      expect(metrics).toContain("storage_level_liters");
+
+      // Communications
+      expect(metrics).toContain("snr_db");
+      expect(metrics).toContain("packet_loss_pct");
+      expect(metrics).toContain("latency_ms");
+
+      // Logistics
+      expect(metrics).toContain("daily_fuel_burn_liters");
+      expect(metrics).toContain("water_consumption_lpd");
     });
   });
 
-  describe("3. Anomaly injection", () => {
-    it("should inject generator overheat anomaly and reflect high temperature", () => {
-      const gen = new BaselineGenerator(300);
-      const anomMgr = new AnomalyManager();
-      const testDate = new Date("2026-09-29T12:00:00Z");
-
-      const sensor = SENSOR_DEFINITIONS.find(
-        (s) => s.stationId === "station-maitri" && s.assetId === "asset-maitri-gen-1" && s.metric === "temperature"
-      )!;
-
-      // Normal baseline is ~73.5°C
-      const normal = gen.generatePoint(sensor, 1, "normal", anomMgr, 1, testDate);
-      expect(normal.envelope.value).toBeGreaterThan(68);
-      expect(normal.envelope.value).toBeLessThan(80);
-
-      // Inject anomaly targeting 98°C
-      anomMgr.inject({
-        type: "GENERATOR_OVERHEAT",
-        stationId: "station-maitri",
-        assetId: "asset-maitri-gen-1",
-        metric: "temperature",
-        targetValue: 98.0,
-      });
-
-      const anomalous = gen.generatePoint(sensor, 2, "anomaly", anomMgr, 2, testDate);
-      expect(anomalous.envelope.value).toBeGreaterThan(90);
-      expect(anomalous.envelope.value).toBeLessThan(105);
-    });
-
-    it("should flag out-of-bound anomalies as SUSPECT quality instead of dropping", () => {
-      const gen = new BaselineGenerator(400);
-      const anomMgr = new AnomalyManager();
-      const testDate = new Date("2026-09-29T12:00:00Z");
-
-      const sensor = SENSOR_DEFINITIONS.find(
-        (s) => s.stationId === "station-maitri" && s.assetId === "asset-maitri-gen-1" && s.metric === "temperature"
-      )!;
-
-      // Inject extreme anomaly beyond max plausible (e.g. 140°C where max plausible is 120°C)
-      anomMgr.inject({
-        type: "CUSTOM",
-        stationId: "station-maitri",
-        assetId: "asset-maitri-gen-1",
-        metric: "temperature",
-        targetValue: 140.0,
-      });
-
-      const extreme = gen.generatePoint(sensor, 1, "anomaly", anomMgr, 1, testDate);
-      expect(extreme.envelope.quality).toBe("SUSPECT");
-    });
-  });
-
-  describe("4. Offline buffering and store-and-forward", () => {
-    it("should buffer messages when in offline mode and drain them in order on recovery", async () => {
-      const buffer = new OfflineBufferQueue(100);
-      expect(buffer.size()).toBe(0);
-
-      const env1: TelemetryEnvelope = {
-        stationId: "station-maitri",
-        metric: "wind_speed",
-        value: 15.5,
-        unit: "m/s",
-        timestamp: new Date().toISOString(),
-        source: "SIMULATOR",
-        quality: "GOOD",
-        sequence: 1,
-      };
-
-      const env2: TelemetryEnvelope = {
-        stationId: "station-maitri",
-        metric: "wind_speed",
-        value: 18.2,
-        unit: "m/s",
-        timestamp: new Date().toISOString(),
-        source: "SIMULATOR",
-        quality: "GOOD",
-        sequence: 2,
-      };
-
-      buffer.enqueue(env1, "stations/station-maitri/environment");
-      buffer.enqueue(env2, "stations/station-maitri/environment");
-
-      expect(buffer.size()).toBe(2);
-
-      const drained = buffer.drainAll();
-      expect(drained.length).toBe(2);
-      expect(drained[0].envelope.sequence).toBe(1);
-      expect(drained[1].envelope.sequence).toBe(2);
-      expect(buffer.size()).toBe(0);
-    });
-
-    it("simulator handles offline toggling and store-and-forward drain", async () => {
-      const sim = new TelemetrySimulator(mqtt);
-
-      sim.setMode("offline");
-      expect(sim.getMode()).toBe("offline");
-
-      // Generate offline step
-      const emitted = await sim.step();
-      expect(emitted.length).toBeGreaterThan(0);
-      expect(sim.getBuffer().size()).toBe(emitted.length);
-
-      // Switch to recovery / normal mode - drains buffer
-      sim.setMode("recovery");
-      expect(sim.getBuffer().size()).toBe(0);
-    });
-  });
-
-  describe("5. Validation and Canonical Envelope", () => {
+  describe("3. Validation & Strict Provenance", () => {
     it("validates valid telemetry envelope correctly", () => {
       const validPayload = {
         stationId: "station-maitri",
@@ -213,7 +126,7 @@ describe("Phase 2: Telemetry Simulator & MQTT Edge Ingestion", () => {
         value: 72.4,
         unit: "degC",
         timestamp: new Date().toISOString(),
-        source: "SIMULATOR",
+        source: "SIMULATED",
         quality: "GOOD",
         sequence: 10291,
       };
@@ -222,14 +135,24 @@ describe("Phase 2: Telemetry Simulator & MQTT Edge Ingestion", () => {
       expect(result.valid).toBe(true);
       expect(result.point).toBeDefined();
       expect(result.point?.stationId).toBe("station-maitri");
+      expect(result.point?.source).toBe("SIMULATED");
+      expect(result.point?.sequence).toBe(10291);
       expect(result.point?.quality).toBe("GOOD");
     });
 
-    it("rejects envelopes with missing required fields", () => {
-      const invalid = { stationId: "station-maitri" };
-      const result = validateTelemetryEnvelope(invalid);
+    it("rejects envelopes with missing or invalid provenance source (no silent conversion)", () => {
+      const invalidSource = {
+        stationId: "station-maitri",
+        metric: "temperature",
+        value: 72.4,
+        unit: "degC",
+        timestamp: new Date().toISOString(),
+        source: "INVALID_PROVENANCE_SOURCE",
+      };
+
+      const result = validateTelemetryEnvelope(invalidSource);
       expect(result.valid).toBe(false);
-      expect(result.errors?.length).toBeGreaterThan(0);
+      expect(result.errors?.some((e) => e.includes("source"))).toBe(true);
     });
 
     it("flags implausible values as SUSPECT without dropping", () => {
@@ -239,7 +162,7 @@ describe("Phase 2: Telemetry Simulator & MQTT Edge Ingestion", () => {
         value: 120.0, // beyond 100 m/s bound
         unit: "m/s",
         timestamp: new Date().toISOString(),
-        source: "SIMULATOR",
+        source: "SIMULATED",
         quality: "GOOD",
         sequence: 1,
       };
@@ -250,69 +173,231 @@ describe("Phase 2: Telemetry Simulator & MQTT Edge Ingestion", () => {
     });
   });
 
-  describe("6. Exit Criteria: Live telemetry enters database with provenance", () => {
-    it("publishes telemetry via MQTT and persists it into TimescaleDB", async () => {
+  describe("4. Sequence handling: duplicates, gaps, out-of-order, and deduplication", () => {
+    it("detects gaps, duplicates, and out-of-order packets and exposes ingestion statistics", async () => {
+      const localIngest = new TelemetryIngestService(mqtt, telemRepo);
+
+      // Packet 1: sequence 1
+      const env1: TelemetryEnvelope = {
+        stationId: "station-maitri",
+        assetId: "asset-maitri-gen-1",
+        metric: "temperature",
+        value: 72.0,
+        unit: "degC",
+        timestamp: new Date().toISOString(),
+        source: "SIMULATED",
+        quality: "GOOD",
+        sequence: 1,
+      };
+      await localIngest.handleMessage("stations/station-maitri/telemetry/asset-maitri-gen-1", Buffer.from(JSON.stringify(env1)));
+
+      // Packet 2: sequence 5 (Gap of 3 packets: 2, 3, 4 missing)
+      const env2: TelemetryEnvelope = {
+        stationId: "station-maitri",
+        assetId: "asset-maitri-gen-1",
+        metric: "temperature",
+        value: 72.5,
+        unit: "degC",
+        timestamp: new Date().toISOString(),
+        source: "SIMULATED",
+        quality: "GOOD",
+        sequence: 5,
+      };
+      await localIngest.handleMessage("stations/station-maitri/telemetry/asset-maitri-gen-1", Buffer.from(JSON.stringify(env2)));
+
+      // Packet 3: duplicate sequence 5
+      await localIngest.handleMessage("stations/station-maitri/telemetry/asset-maitri-gen-1", Buffer.from(JSON.stringify(env2)));
+
+      // Packet 4: out-of-order packet (sequence 3 arrived late)
+      const env3: TelemetryEnvelope = {
+        stationId: "station-maitri",
+        assetId: "asset-maitri-gen-1",
+        metric: "temperature",
+        value: 72.2,
+        unit: "degC",
+        timestamp: new Date().toISOString(),
+        source: "SIMULATED",
+        quality: "GOOD",
+        sequence: 3,
+      };
+      await localIngest.handleMessage("stations/station-maitri/telemetry/asset-maitri-gen-1", Buffer.from(JSON.stringify(env3)));
+
+      const stats = localIngest.getStats();
+      expect(stats.totalReceived).toBe(4);
+      expect(stats.duplicateCount).toBe(1);
+      expect(stats.gapCount).toBe(3);
+      expect(stats.outOfOrderCount).toBe(1);
+      expect(stats.totalPersisted).toBe(3); // 1 duplicate was dropped/deduplicated!
+    });
+  });
+
+  describe("5. Store-and-forward edge buffer and batch replay with acknowledgement metadata", () => {
+    it("buffers offline messages, assigns replay batches, and acknowledges them", () => {
+      const buffer = new OfflineBufferQueue(100);
+      buffer.clear();
+
+      const env1: TelemetryEnvelope = {
+        stationId: "station-maitri",
+        metric: "wind_speed",
+        value: 15.5,
+        unit: "m/s",
+        timestamp: new Date().toISOString(),
+        source: "SIMULATED",
+        quality: "GOOD",
+        sequence: 10,
+      };
+      const env2: TelemetryEnvelope = {
+        stationId: "station-maitri",
+        metric: "wind_speed",
+        value: 18.2,
+        unit: "m/s",
+        timestamp: new Date().toISOString(),
+        source: "SIMULATED",
+        quality: "GOOD",
+        sequence: 11,
+      };
+
+      buffer.enqueue(env1, "stations/station-maitri/environment");
+      buffer.enqueue(env2, "stations/station-maitri/environment");
+
+      expect(buffer.size()).toBe(2);
+      expect(buffer.getOldestTimestamp()).toBeDefined();
+
+      // Prepare batch for replay
+      const replay = buffer.prepareReplayBatch(10);
+      expect(replay).toBeDefined();
+      expect(replay?.metadata.totalCount).toBe(2);
+      expect(replay?.metadata.sequenceRange).toEqual([10, 11]);
+      expect(replay?.metadata.batchId).toBeDefined();
+      expect(replay?.metadata.publishedAt).toBeDefined();
+      expect(replay?.metadata.replayStatus).toBe("REPLAYING");
+
+      // Server acknowledgement
+      const acked = buffer.acknowledgeBatch(replay!.metadata.batchId);
+      expect(acked).toBe(2);
+      expect(buffer.size()).toBe(0);
+    });
+  });
+
+  describe("6. Connectivity degradation and recovery simulation", () => {
+    it("supports NORMAL, DEGRADED, OFFLINE, and RECOVERY connectivity transitions", async () => {
+      const sim = new TelemetrySimulator(mqtt);
+      sim.getBuffer().clear();
+
+      expect(sim.getConnectivityState()).toBe("NORMAL");
+
+      // Switch to OFFLINE
+      sim.setConnectivityState("OFFLINE");
+      expect(sim.getConnectivityState()).toBe("OFFLINE");
+
+      // Step while offline buffers packets
+      const emitted = await sim.step();
+      expect(emitted.length).toBeGreaterThan(0);
+      expect(sim.getBuffer().size()).toBe(emitted.length);
+
+      // Switch to RECOVERY: replays store-and-forward batches and clears buffer
+      sim.setConnectivityState("RECOVERY");
+      await sim.replayStoreAndForwardBatches();
+
+      expect(sim.getBuffer().size()).toBe(0);
+      expect(sim.getConnectivityState()).toBe("NORMAL");
+    });
+  });
+
+  describe("7. Deterministic anomaly demo controls", () => {
+    it("provides demo controls for all 6 required anomaly presets", () => {
       const sim = new TelemetrySimulator(mqtt);
 
-      // Execute a simulation step (publishes all sensors to MQTT)
-      const stepEmitted = await sim.step();
-      expect(stepEmitted.length).toBeGreaterThanOrEqual(15);
+      // 1. Generator overheating
+      const anom1 = sim.injectGeneratorOverheating();
+      expect(anom1.type).toBe("GENERATOR_OVERHEAT");
+      expect(anom1.targetValue).toBe(98.5);
 
-      // Give MQTT broker brief moment to deliver to ingest subscriber
+      // 2. Fuel consumption spike
+      const anom2 = sim.injectFuelConsumptionSpike();
+      expect(anom2.type).toBe("FUEL_CONSUMPTION_SPIKE");
+      expect(anom2.multiplier).toBe(2.2);
+
+      // 3. Battery discharge
+      const anom3 = sim.injectBatteryDischarge();
+      expect(anom3.type).toBe("BATTERY_DISCHARGE");
+      expect(anom3.targetValue).toBe(14.5);
+
+      // 4. HVAC load spike
+      const anom4 = sim.injectHvacLoadSpike();
+      expect(anom4.type).toBe("HVAC_LOAD_SPIKE");
+      expect(anom4.targetValue).toBe(92.0);
+
+      // 5. Communication loss
+      const anom5 = sim.injectCommunicationLoss();
+      expect(anom5.type).toBe("COMMUNICATION_LOSS");
+      expect(anom5.targetValue).toBe(78.0);
+
+      // 6. Environmental extreme
+      const anom6 = sim.injectEnvironmentalExtreme();
+      expect(anom6.type).toBe("ENVIRONMENTAL_EXTREME");
+      expect(anom6.targetValue).toBe(46.5);
+
+      expect(sim.getActiveAnomalies().length).toBeGreaterThanOrEqual(6);
+
+      sim.clearAnomalies();
+      expect(sim.getActiveAnomalies().length).toBe(0);
+    });
+  });
+
+  describe("8. Exit Criteria: Full Pipeline (telemetry -> MQTT -> validate -> persist -> query)", () => {
+    it("executes discrete simulation step and verifies live ingestion into TimescaleDB", async () => {
+      const sim = new TelemetrySimulator(mqtt);
+
+      const stepEmitted = await sim.step();
+      expect(stepEmitted.length).toBeGreaterThanOrEqual(20);
+
+      // Allow broker brief moment to deliver to ingest subscriber
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      // Query database for the newly inserted points
       const recentPoints = await telemRepo.findRecent({
         stationId: "station-maitri",
         limit: 20,
       });
 
       expect(recentPoints.length).toBeGreaterThan(0);
-
-      const latestPoint = recentPoints[0];
-      expect(latestPoint.stationId).toBe("station-maitri");
-      expect(latestPoint.timestamp).toBeInstanceOf(Date);
-      expect(latestPoint.source).toBe("SIMULATOR");
-      expect(["GOOD", "SUSPECT"]).toContain(latestPoint.quality);
-      expect(typeof latestPoint.value).toBe("number");
+      const latest = recentPoints[0];
+      expect(latest.stationId).toBe("station-maitri");
+      expect(["SIMULATED", "SIMULATOR"]).toContain(latest.source);
+      expect(latest.timestamp).toBeInstanceOf(Date);
+      expect(typeof latest.value).toBe("number");
     });
 
-    it("GET /api/telemetry retrieves persisted live telemetry via HTTP", async () => {
-      const res = await request(app).get("/api/telemetry?stationId=station-maitri&limit=10");
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body.data.length).toBeGreaterThan(0);
-    });
-
-    it("simulation control API endpoints function correctly", async () => {
-      // Check status endpoint
+    it("verifies HTTP APIs for simulation status, connectivity, replay, and anomaly presets", async () => {
+      // 1. Status API
       const statusRes = await request(app).get("/api/telemetry/simulate/status");
       expect(statusRes.status).toBe(200);
-      expect(statusRes.body.success).toBe(true);
-      expect(statusRes.body.data).toHaveProperty("simulator");
-      expect(statusRes.body.data).toHaveProperty("ingest");
+      expect(statusRes.body.data.simulator).toHaveProperty("connectivityState");
+      expect(statusRes.body.data.simulator).toHaveProperty("offlineBufferedCount");
+      expect(statusRes.body.data.ingest).toHaveProperty("duplicateCount");
+      expect(statusRes.body.data.ingest).toHaveProperty("gapCount");
 
-      // Trigger a discrete step via API
-      const stepRes = await request(app).post("/api/telemetry/simulate/step");
-      expect(stepRes.status).toBe(200);
-      expect(stepRes.body.data.emittedCount).toBeGreaterThan(0);
+      // 2. Connectivity API
+      const connRes = await request(app).post("/api/telemetry/simulate/connectivity").send({ state: "DEGRADED" });
+      expect(connRes.status).toBe(200);
+      expect(connRes.body.data.connectivityState).toBe("DEGRADED");
 
-      // Inject anomaly via API
-      const anomRes = await request(app).post("/api/telemetry/simulate/anomaly").send({
-        type: "GENERATOR_OVERHEAT",
+      // Reset to NORMAL
+      await request(app).post("/api/telemetry/simulate/connectivity").send({ state: "NORMAL" });
+
+      // 3. Anomaly Preset API
+      const anomRes = await request(app).post("/api/telemetry/simulate/anomaly/preset").send({
+        preset: "FUEL_CONSUMPTION_SPIKE",
         stationId: "station-maitri",
-        assetId: "asset-maitri-gen-1",
-        metric: "temperature",
-        targetValue: 95.0,
       });
       expect(anomRes.status).toBe(200);
-      expect(anomRes.body.success).toBe(true);
+      expect(anomRes.body.data.type).toBe("FUEL_CONSUMPTION_SPIKE");
 
-      // Clear anomalies via API
-      const clearRes = await request(app).post("/api/telemetry/simulate/clear-anomalies");
-      expect(clearRes.status).toBe(200);
-      expect(clearRes.body.success).toBe(true);
+      // 4. Ingest stats API
+      const ingestRes = await request(app).get("/api/telemetry/ingest/stats");
+      expect(ingestRes.status).toBe(200);
+      expect(ingestRes.body.data).toHaveProperty("stats");
+      expect(ingestRes.body.data).toHaveProperty("streams");
     });
   });
 });

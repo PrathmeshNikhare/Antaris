@@ -2,6 +2,11 @@ import type { SimulatorAnomaly } from "@maitri-bharati/shared";
 
 export type AnomalyType =
   | "GENERATOR_OVERHEAT"
+  | "FUEL_CONSUMPTION_SPIKE"
+  | "BATTERY_DISCHARGE"
+  | "HVAC_LOAD_SPIKE"
+  | "COMMUNICATION_LOSS"
+  | "ENVIRONMENTAL_EXTREME"
   | "BATTERY_DEGRADATION"
   | "FUEL_LEAK"
   | "WATER_FREEZE_RISK"

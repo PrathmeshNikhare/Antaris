@@ -11,6 +11,8 @@ interface TelemetryRow {
   timestamp: Date;
   source: string;
   quality: string;
+  sequence: string | null;
+  ingested_at: Date;
 }
 
 function mapRowToTelemetry(row: TelemetryRow): TelemetryPoint {
@@ -24,6 +26,8 @@ function mapRowToTelemetry(row: TelemetryRow): TelemetryPoint {
     timestamp: new Date(row.timestamp),
     source: row.source as TelemetrySource,
     quality: row.quality as DataQuality,
+    sequence: row.sequence ? parseInt(row.sequence, 10) : undefined,
+    ingestedAt: row.ingested_at ? new Date(row.ingested_at) : undefined,
   };
 }
 
@@ -40,9 +44,9 @@ export class TelemetryRepository {
   async insert(point: TelemetryPoint): Promise<TelemetryPoint> {
     const pool = getPool();
     const res = await pool.query<TelemetryRow>(
-      `INSERT INTO telemetry_points (id, station_id, asset_id, metric, value, unit, timestamp, source, quality)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, station_id, asset_id, metric, value, unit, timestamp, source, quality;`,
+      `INSERT INTO telemetry_points (id, station_id, asset_id, metric, value, unit, timestamp, source, quality, sequence, ingested_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id, station_id, asset_id, metric, value, unit, timestamp, source, quality, sequence, ingested_at;`,
       [
         point.id,
         point.stationId,
@@ -53,6 +57,8 @@ export class TelemetryRepository {
         point.timestamp,
         point.source,
         point.quality,
+        point.sequence ?? null,
+        point.ingestedAt ?? new Date(),
       ]
     );
     return mapRowToTelemetry(res.rows[0]);
@@ -81,9 +87,9 @@ export class TelemetryRepository {
       params.push(options.to);
     }
 
-    const limit = Math.min(options.limit ?? 100, 1000); // capped query limit per coding standards
+    const limit = Math.min(options.limit ?? 100, 1000);
     const query = `
-      SELECT id, station_id, asset_id, metric, value, unit, timestamp, source, quality
+      SELECT id, station_id, asset_id, metric, value, unit, timestamp, source, quality, sequence, ingested_at
       FROM telemetry_points
       WHERE ${conditions.join(" AND ")}
       ORDER BY timestamp DESC

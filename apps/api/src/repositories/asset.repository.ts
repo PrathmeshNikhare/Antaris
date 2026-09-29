@@ -28,6 +28,16 @@ function mapRowToAsset(row: AssetRow): Asset {
 }
 
 export class AssetRepository {
+  async findAll(): Promise<Asset[]> {
+    const pool = getPool();
+    const res = await pool.query<AssetRow>(
+      `SELECT id, station_id, parent_asset_id, code, name, type, status, criticality, health_score
+       FROM assets
+       ORDER BY name ASC;`
+    );
+    return res.rows.map(mapRowToAsset);
+  }
+
   async findByStationId(stationId: string): Promise<Asset[]> {
     const pool = getPool();
     const res = await pool.query<AssetRow>(

@@ -173,11 +173,115 @@ export function createTelemetryRouter(): Router {
     }
   });
 
+  // POST /api/telemetry/simulate/connectivity
+  router.post("/simulate/connectivity", (req: Request, res: Response) => {
+    try {
+      const { simulator } = getTelemetryPipeline();
+      const state = req.body?.state;
+      if (!["NORMAL", "DEGRADED", "OFFLINE", "RECOVERY"].includes(state)) {
+        res.status(400).json({
+          success: false,
+          error: { code: "VALIDATION_ERROR", message: "state must be one of: NORMAL, DEGRADED, OFFLINE, RECOVERY" },
+        });
+        return;
+      }
+      simulator.setConnectivityState(state);
+      res.json({ success: true, data: simulator.getStatus() });
+    } catch (err) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: String(err) } });
+    }
+  });
+
+  // POST /api/telemetry/simulate/replay - Trigger store-and-forward batch replay
+  router.post("/simulate/replay", async (req: Request, res: Response) => {
+    try {
+      const { simulator } = getTelemetryPipeline();
+      const batchSize = req.body?.batchSize ? parseInt(String(req.body.batchSize), 10) : 100;
+      const replayResult = await simulator.replayStoreAndForwardBatches(batchSize);
+      res.json({
+        success: true,
+        data: {
+          replayed: Boolean(replayResult),
+          batch: replayResult?.metadata,
+          remainingBufferedCount: simulator.getStatus().offlineBufferedCount,
+          simulatorStatus: simulator.getStatus(),
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: String(err) } });
+    }
+  });
+
+  // POST /api/telemetry/simulate/anomaly/preset
+  router.post("/simulate/anomaly/preset", async (req: Request, res: Response) => {
+    try {
+      const { simulator } = getTelemetryPipeline();
+      const { preset, stationId = "station-maitri" } = req.body ?? {};
+
+      if (preset === "NORMAL") {
+        simulator.clearAnomalies();
+        simulator.setConnectivityState("NORMAL");
+        await simulator.step();
+        res.json({
+          success: true,
+          message: "Nominal conditions restored",
+          data: { status: simulator.getStatus() },
+        });
+        return;
+      }
+
+      let anomaly;
+      switch (preset) {
+        case "GENERATOR_OVERHEAT":
+          anomaly = simulator.injectGeneratorOverheating(stationId);
+          break;
+        case "FUEL_CONSUMPTION_SPIKE":
+          anomaly = simulator.injectFuelConsumptionSpike(stationId);
+          break;
+        case "BATTERY_DISCHARGE":
+          anomaly = simulator.injectBatteryDischarge(stationId);
+          break;
+        case "HVAC_LOAD_SPIKE":
+          anomaly = simulator.injectHvacLoadSpike(stationId);
+          break;
+        case "COMMUNICATION_LOSS":
+          anomaly = simulator.injectCommunicationLoss(stationId);
+          simulator.setConnectivityState("DEGRADED");
+          break;
+        case "ENVIRONMENTAL_EXTREME":
+          anomaly = simulator.injectEnvironmentalExtreme(stationId);
+          break;
+        default:
+          res.status(400).json({
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "preset must be one of: NORMAL, GENERATOR_OVERHEAT, FUEL_CONSUMPTION_SPIKE, BATTERY_DISCHARGE, HVAC_LOAD_SPIKE, COMMUNICATION_LOSS, ENVIRONMENTAL_EXTREME",
+            },
+          });
+          return;
+      }
+
+      // Step simulator immediately so anomalous telemetry is published and reflected in Digital Twin without delay
+      await simulator.step();
+
+      res.json({ success: true, data: anomaly });
+    } catch (err) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: String(err) } });
+    }
+  });
+
   // GET /api/telemetry/ingest/stats
   router.get("/ingest/stats", (_req: Request, res: Response) => {
     try {
       const { ingest } = getTelemetryPipeline();
-      res.json({ success: true, data: ingest.getStats() });
+      res.json({
+        success: true,
+        data: {
+          stats: ingest.getStats(),
+          streams: ingest.getStreamStats(),
+        },
+      });
     } catch (err) {
       res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: String(err) } });
     }
