@@ -4,16 +4,16 @@ Update this file after every completed phase.
 
 ## Current phase
 
-`Phase 0 Completed — Ready for Phase 1`
+`Phase 2 Completed — Ready for Phase 3`
 
 ## Status
 
 | Phase | Status | Notes |
 |---|---|---|
 | 0 Foundation | COMPLETED | Monorepo, shared types, Express API shell, React web shell, Docker Compose, Vitest/ESLint passing |
-| 1 Data model | NOT STARTED | Next: migrations, seeds, station & asset models |
-| 2 Telemetry | NOT STARTED | |
-| 3 Digital Twin | NOT STARTED | |
+| 1 Data model | COMPLETED | PostgreSQL/TimescaleDB schema, migrations, seeds for Maitri & Bharati, repositories & REST APIs |
+| 2 Telemetry | COMPLETED | Deterministic baseline telemetry, PRNG, gaussian noise, anomaly injection, offline buffering, MQTT pub/sub ingest, and database persistence |
+| 3 Digital Twin | NOT STARTED | Next: Digital Twin state engine, current state registry, aggregate status, WebSocket events |
 | 4 Dashboard | NOT STARTED | |
 | 5 AI/ML | NOT STARTED | |
 | 6 Simulation | NOT STARTED | |
@@ -22,7 +22,7 @@ Update this file after every completed phase.
 
 ## Latest handoff
 
-Phase 0 handoff documented in [handoff.md](file:///d:/Prathamesh/IIIT%20Pune/Research/SIH%202026/maitri_bharati_antigravity_harness/handoff.md).
+Phase 2 handoff documented in [handoff.md](file:///c:/Users/Vidhansh/OneDrive/Desktop/sih69/Maitri-Bharti/handoff.md).
 
 ## Known issues
 
@@ -39,5 +39,13 @@ Reason: Lightweight, fast startup, easy testability with supertest, and seamless
 
 2026-09-28 — Scaffolded React 19 + TypeScript frontend with Vite, custom dark command-center design system, and react-router-dom.
 Reason: Instant HMR, zero Tailwind requirement (vanilla CSS tokens & components), accessible dark mode command-center aesthetic.
-```
 
+2026-09-29 — Implemented Station and Asset relational model with TimescaleDB hypertable support and comprehensive seeds.
+Reason: Provides full asset hierarchy, initial telemetry points, and operational thresholds for Maitri and Bharati.
+
+2026-09-29 — Built deterministic Mulberry32 PRNG and diurnal physical models for baseline telemetry with Gaussian noise.
+Reason: Ensures 100% reproducible scenario testing while generating realistic sensor oscillations matching Antarctic climate and equipment cycles.
+
+2026-09-29 — Designed store-and-forward edge buffer (OfflineBufferQueue) with automatic drain upon recovery.
+Reason: Accurately simulates Antarctic communications blackout resilience, preventing data loss during satellite link drops.
+```

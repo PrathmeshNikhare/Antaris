@@ -61,6 +61,43 @@ export interface TelemetryPoint {
   quality: DataQuality;
 }
 
+export interface TelemetryEnvelope {
+  stationId: string;
+  assetId?: string;
+  metric: string;
+  value: number;
+  unit: string;
+  timestamp: string;
+  source: TelemetrySource;
+  quality: DataQuality;
+  sequence: number;
+}
+
+export type SimulatorMode = "normal" | "noisy" | "anomaly" | "offline" | "recovery";
+
+export interface SimulatorAnomaly {
+  id: string;
+  stationId: string;
+  assetId?: string;
+  metric: string;
+  type: string;
+  targetValue?: number;
+  multiplier?: number;
+  durationSeconds?: number;
+  startedAt: string;
+}
+
+export interface SimulatorStatus {
+  running: boolean;
+  mode: SimulatorMode;
+  tickCount: number;
+  offlineBufferedCount: number;
+  activeAnomalies: SimulatorAnomaly[];
+  intervalMs: number;
+  mqttConnected: boolean;
+  lastEmittedAt?: string;
+}
+
 // ─── Inventory ──────────────────────────────────────────────────
 export type InventoryCategory = "FUEL" | "FOOD" | "MEDICAL" | "SPARES" | "SCIENTIFIC";
 

@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 
 // Load .env from project root or current working directory
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 export interface AppConfig {
