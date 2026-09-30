@@ -7,6 +7,8 @@ interface OperatorRow {
   full_name: string;
   role: string;
   station_id: string | null;
+  password_hash?: string | null;
+  email?: string | null;
   created_at: Date;
 }
 
@@ -21,11 +23,16 @@ function mapRowToOperator(row: OperatorRow): Operator {
   };
 }
 
+export interface OperatorWithAuth extends Operator {
+  passwordHash?: string;
+  email?: string;
+}
+
 export class OperatorRepository {
   async findAll(): Promise<Operator[]> {
     const pool = getPool();
     const res = await pool.query<OperatorRow>(
-      `SELECT id, username, full_name, role, station_id, created_at
+      `SELECT id, username, full_name, role, station_id, email, created_at
        FROM operators
        ORDER BY username ASC;`
     );
@@ -35,7 +42,7 @@ export class OperatorRepository {
   async findByUsername(username: string): Promise<Operator | null> {
     const pool = getPool();
     const res = await pool.query<OperatorRow>(
-      `SELECT id, username, full_name, role, station_id, created_at
+      `SELECT id, username, full_name, role, station_id, email, created_at
        FROM operators
        WHERE username = $1;`,
       [username]
@@ -44,23 +51,66 @@ export class OperatorRepository {
     return mapRowToOperator(res.rows[0]);
   }
 
-  async insert(operator: Operator): Promise<Operator> {
+  async findByUsernameWithAuth(username: string): Promise<OperatorWithAuth | null> {
     const pool = getPool();
     const res = await pool.query<OperatorRow>(
-      `INSERT INTO operators (id, username, full_name, role, station_id, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `SELECT id, username, full_name, role, station_id, password_hash, email, created_at
+       FROM operators
+       WHERE username = $1;`,
+      [username]
+    );
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
+    return {
+      ...mapRowToOperator(row),
+      passwordHash: row.password_hash ?? undefined,
+      email: row.email ?? undefined,
+    };
+  }
+
+  async findById(id: string): Promise<Operator | null> {
+    const pool = getPool();
+    const res = await pool.query<OperatorRow>(
+      `SELECT id, username, full_name, role, station_id, email, created_at
+       FROM operators
+       WHERE id = $1;`,
+      [id]
+    );
+    if (res.rows.length === 0) return null;
+    return mapRowToOperator(res.rows[0]);
+  }
+
+  async insert(operator: Operator, passwordHash?: string, email?: string): Promise<Operator> {
+    const pool = getPool();
+    const res = await pool.query<OperatorRow>(
+      `INSERT INTO operators (id, username, full_name, role, station_id, password_hash, email, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (username) DO UPDATE
-       SET full_name = EXCLUDED.full_name, role = EXCLUDED.role, station_id = EXCLUDED.station_id
-       RETURNING id, username, full_name, role, station_id, created_at;`,
+       SET full_name = EXCLUDED.full_name,
+           role = EXCLUDED.role,
+           station_id = EXCLUDED.station_id,
+           password_hash = COALESCE(EXCLUDED.password_hash, operators.password_hash),
+           email = EXCLUDED.email
+       RETURNING id, username, full_name, role, station_id, email, created_at;`,
       [
         operator.id,
         operator.username,
         operator.fullName,
         operator.role,
         operator.stationId ?? null,
+        passwordHash ?? null,
+        email ?? null,
         operator.createdAt,
       ]
     );
     return mapRowToOperator(res.rows[0]);
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    const pool = getPool();
+    await pool.query(
+      `UPDATE operators SET password_hash = $1 WHERE id = $2;`,
+      [passwordHash, id]
+    );
   }
 }

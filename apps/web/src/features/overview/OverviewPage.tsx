@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useStation } from "../../hooks/useStation";
+import { ResilienceIndexCard } from "../resilience/ResilienceIndexCard";
+import { DecisionTracePanel } from "../resilience/DecisionTracePanel";
 
 export function OverviewPage(): React.JSX.Element {
   const { stationId, twinState, loading, error, recentEvents } = useStation();
@@ -73,6 +75,11 @@ export function OverviewPage(): React.JSX.Element {
           </div>
         )}
       </header>
+
+      {/* Antarctic Mission Resilience Index Differentiator Card */}
+      <div style={{ marginBottom: "1.25rem" }}>
+        <ResilienceIndexCard stationId={stationId} />
+      </div>
 
       {/* 4-Domain KPI Summary Strip */}
       <div className="grid-4">
@@ -334,6 +341,11 @@ export function OverviewPage(): React.JSX.Element {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Decision Trace & Evidence Dossier Flow */}
+      <div style={{ marginTop: "1.25rem" }}>
+        <DecisionTracePanel stationId={stationId} />
       </div>
     </div>
   );

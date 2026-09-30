@@ -96,6 +96,23 @@ describe("App Command Center Shell", () => {
   beforeEach(() => {
     // Mock global fetch
     globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/auth/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              data: {
+                user: {
+                  id: "op-admin",
+                  username: "admin",
+                  role: "ADMIN",
+                  stationId: "station-maitri",
+                },
+              },
+            }),
+        });
+      }
       if (url.includes("/api/twin/")) {
         return Promise.resolve({
           ok: true,
@@ -146,14 +163,18 @@ describe("App Command Center Shell", () => {
     (globalThis as any).WebSocket = MockWebSocket;
   });
 
-  it("renders the sidebar brand and title", () => {
+  it("renders the sidebar brand and title", async () => {
     render(<App />);
-    expect(screen.getByText("Antarctic Twin")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Antarctic Twin")).toBeInTheDocument();
+    });
   });
 
-  it("renders all 10 Phase 4 navigation links", () => {
+  it("renders all 10 Phase 4 navigation links", async () => {
     render(<App />);
-    expect(screen.getByText("Overview")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Overview")).toBeInTheDocument();
+    });
     expect(screen.getByText("Digital Twin")).toBeInTheDocument();
     expect(screen.getByText("Infrastructure")).toBeInTheDocument();
     expect(screen.getByText("Energy Grid")).toBeInTheDocument();
@@ -165,9 +186,11 @@ describe("App Command Center Shell", () => {
     expect(screen.getByText("Audit Log")).toBeInTheDocument();
   });
 
-  it("renders station switcher buttons in TopBar", () => {
+  it("renders station switcher buttons in TopBar", async () => {
     render(<App />);
-    expect(screen.getByText("🇮🇳 Maitri")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("🇮🇳 Maitri")).toBeInTheDocument();
+    });
     expect(screen.getByText("🇮🇳 Bharati")).toBeInTheDocument();
   });
 

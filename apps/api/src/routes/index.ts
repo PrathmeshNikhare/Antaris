@@ -13,3 +13,5 @@ export * from "./simulations.router";
 export * from "./twin.router";
 export * from "./intelligence.router";
 export * from "./copilot.router";
+export * from "./auth.router";
+

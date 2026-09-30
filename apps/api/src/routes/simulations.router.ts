@@ -117,15 +117,37 @@ export function createSimulationsRouter(): Router {
     }
   });
 
+  // ── POST /api/simulations/multi-hazard ────────────────────────────
+  router.post("/multi-hazard", async (req: Request, res: Response) => {
+    try {
+      const { composeMultiHazardSimulation } = await import("../simulation/multi-hazard-composer");
+      const result = await composeMultiHazardSimulation(req.body);
+      res.status(201).json({
+        success: true,
+        data: result,
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (err) {
+      console.error("[simulations.router] Error running multi-hazard simulation:", err);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: "MULTI_HAZARD_FAILED",
+          message: (err as Error).message || "Internal error running multi-hazard simulation",
+        },
+      });
+    }
+  });
+
   // ── GET /api/simulations ──────────────────────────────────────────
-  router.get("/", (req: Request, res: Response) => {
+  router.get("/", async (req: Request, res: Response) => {
     try {
       const stationId = req.query.stationId as string | undefined;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
 
       const history = stationId
-        ? simulationStore.listByStation(stationId, limit)
-        : simulationStore.getAll(limit);
+        ? await simulationStore.listByStationAsync(stationId, limit)
+        : await simulationStore.getAllAsync(limit);
 
       res.json({
         success: true,
@@ -144,10 +166,10 @@ export function createSimulationsRouter(): Router {
   });
 
   // ── GET /api/simulations/:simulationId ────────────────────────────
-  router.get("/:simulationId", (req: Request, res: Response) => {
+  router.get("/:simulationId", async (req: Request, res: Response) => {
     try {
       const { simulationId } = req.params;
-      const result = simulationStore.getById(simulationId);
+      const result = await simulationStore.getByIdAsync(simulationId);
 
       if (!result) {
         res.status(404).json({

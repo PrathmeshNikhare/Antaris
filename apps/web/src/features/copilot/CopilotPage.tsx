@@ -116,33 +116,70 @@ export function CopilotPage(): React.JSX.Element {
     });
   };
 
-  // ── Render markdown-like content ──────────────────────────────
+  // ── Render safe markdown-like content (zero dangerouslySetInnerHTML) ───────
+  const parseFormattedText = (raw: string): React.ReactNode[] => {
+    const tokens: React.ReactNode[] = [];
+    const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(raw)) !== null) {
+      if (match.index > lastIndex) {
+        tokens.push(raw.slice(lastIndex, match.index));
+      }
+      const token = match[0];
+      const key = `${match.index}-${token.length}`;
+      if (token.startsWith("`") && token.endsWith("`")) {
+        tokens.push(
+          <code key={key} className="copilot-code-inline">
+            {token.slice(1, -1)}
+          </code>
+        );
+      } else if (token.startsWith("**") && token.endsWith("**")) {
+        tokens.push(<strong key={key}>{token.slice(2, -2)}</strong>);
+      } else if (token.startsWith("*") && token.endsWith("*")) {
+        tokens.push(<em key={key}>{token.slice(1, -1)}</em>);
+      } else {
+        tokens.push(token);
+      }
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < raw.length) {
+      tokens.push(raw.slice(lastIndex));
+    }
+    return tokens.length > 0 ? tokens : [raw];
+  };
+
   const renderContent = (text: string) => {
-    // Simple markdown: bold, bullet points, code, headers
     const lines = text.split("\n");
     return lines.map((line, i) => {
-      let processed = line
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-        .replace(/\*(.+?)\*/g, "<em>$1</em>")
-        .replace(/`(.+?)`/g, '<code class="copilot-code-inline">$1</code>');
-
       if (line.startsWith("### ")) {
         return (
-          <h4 key={i} className="copilot-msg-h4" dangerouslySetInnerHTML={{ __html: processed.slice(4) }} />
+          <h4 key={i} className="copilot-msg-h4">
+            {parseFormattedText(line.slice(4))}
+          </h4>
         );
       }
       if (line.startsWith("## ")) {
         return (
-          <h3 key={i} className="copilot-msg-h3" dangerouslySetInnerHTML={{ __html: processed.slice(3) }} />
+          <h3 key={i} className="copilot-msg-h3">
+            {parseFormattedText(line.slice(3))}
+          </h3>
         );
       }
       if (line.startsWith("- ") || line.startsWith("• ")) {
         return (
-          <li key={i} className="copilot-msg-li" dangerouslySetInnerHTML={{ __html: processed.slice(2) }} />
+          <li key={i} className="copilot-msg-li">
+            {parseFormattedText(line.slice(2))}
+          </li>
         );
       }
       if (line.trim() === "") return <br key={i} />;
-      return <p key={i} className="copilot-msg-p" dangerouslySetInnerHTML={{ __html: processed }} />;
+      return (
+        <p key={i} className="copilot-msg-p">
+          {parseFormattedText(line)}
+        </p>
+      );
     });
   };
 

@@ -31,6 +31,7 @@ export const ALLOWED_TOOLS = [
   "get_inventory_status",
   "get_environment_summary",
   "get_dependency_impact",
+  "get_latest_simulation",
   "get_simulation_result",
   "get_recent_operator_actions",
 ] as const;
@@ -84,13 +85,17 @@ export const COPILOT_TOOLS: CopilotToolDefinition[] = [
     function: {
       name: "get_asset_history",
       description:
-        "Get recent telemetry history for a specific metric on an asset. Returns time-series data points. Use when the operator asks about trends or recent changes in a metric.",
+        "Get recent telemetry history for a specific metric on a specific asset. Returns time-series data points strictly filtered by station and asset. Use when the operator asks about trends or recent changes in a metric.",
       parameters: {
         type: "object",
         properties: {
           stationId: {
             type: "string",
-            description: "The station identifier",
+            description: "The station identifier, e.g. 'station-maitri' or 'station-bharati'",
+          },
+          assetId: {
+            type: "string",
+            description: "The specific asset identifier to query (e.g. 'asset-maitri-gen-1' or 'asset-bharati-gen-1')",
           },
           metric: {
             type: "string",
@@ -101,7 +106,7 @@ export const COPILOT_TOOLS: CopilotToolDefinition[] = [
             description: "Number of recent data points to retrieve (default: 24)",
           },
         },
-        required: ["stationId", "metric"],
+        required: ["stationId", "assetId", "metric"],
       },
     },
   },
@@ -225,31 +230,15 @@ export const COPILOT_TOOLS: CopilotToolDefinition[] = [
   {
     type: "function",
     function: {
-      name: "get_simulation_result",
+      name: "get_latest_simulation",
       description:
-        "Get the most recent what-if resilience simulation result, or run a new simulation for a given scenario. Shows baseline vs scenario comparison, impacted assets, blast radius, and recovery actions. Clearly label results as SIMULATED. Use when the operator asks 'what if' questions about failures.",
+        "Get the most recent counterfactual resilience what-if simulation run for a station. Shows baseline vs scenario comparisons, impacted assets, blast radius, and recovery actions. Strictly read-only.",
       parameters: {
         type: "object",
         properties: {
           stationId: {
             type: "string",
-            description: "The station identifier",
-          },
-          scenarioType: {
-            type: "string",
-            description: "The scenario to simulate",
-            enum: [
-              "GENERATOR_FAILURE",
-              "BATTERY_DEGRADATION",
-              "FUEL_SHORTAGE",
-              "EXTREME_COLD",
-              "HIGH_WIND",
-              "COMMUNICATION_OUTAGE",
-            ],
-          },
-          durationHours: {
-            type: "string",
-            description: "Optional duration in hours for the scenario",
+            description: "The station identifier, e.g. 'station-maitri' or 'station-bharati'",
           },
         },
         required: ["stationId"],
@@ -261,16 +250,20 @@ export const COPILOT_TOOLS: CopilotToolDefinition[] = [
     function: {
       name: "get_recent_operator_actions",
       description:
-        "Get the recent audit trail of operator actions: who did what, when, and the result. Use when the operator asks about recent activity, who made changes, or what was done previously.",
+        "Get recent audit trail of operator actions for a specific station: who did what, when, and the result. Strictly station-scoped.",
       parameters: {
         type: "object",
         properties: {
+          stationId: {
+            type: "string",
+            description: "The station identifier to query audit events for",
+          },
           limit: {
             type: "string",
             description: "Number of recent actions to return (default: 10)",
           },
         },
-        required: [],
+        required: ["stationId"],
       },
     },
   },

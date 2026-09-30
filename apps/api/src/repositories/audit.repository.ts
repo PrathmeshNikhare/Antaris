@@ -73,4 +73,34 @@ export class AuditRepository {
     );
     return mapRowToAudit(res.rows[0]);
   }
+
+  async create(event: {
+    id?: string;
+    operatorId?: string;
+    action: string;
+    targetType: string;
+    targetId?: string;
+    previousState?: Record<string, unknown>;
+    newState?: Record<string, unknown>;
+    result: string;
+    correlationId?: string;
+    createdAt?: Date;
+    timestamp?: string | Date;
+    details?: Record<string, unknown>;
+  }): Promise<AuditEvent> {
+    const { randomUUID } = await import("node:crypto");
+    const fullEvent: AuditEvent = {
+      id: event.id || randomUUID(),
+      operatorId: event.operatorId,
+      action: event.action,
+      targetType: event.targetType,
+      targetId: event.targetId,
+      previousState: event.previousState,
+      newState: event.newState || event.details,
+      result: event.result,
+      correlationId: event.correlationId,
+      createdAt: event.createdAt || (event.timestamp ? new Date(event.timestamp) : new Date()),
+    };
+    return this.insert(fullEvent);
+  }
 }

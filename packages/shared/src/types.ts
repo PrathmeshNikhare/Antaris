@@ -24,6 +24,7 @@ export type AssetType =
   | "WATER_SYSTEM"
   | "COMMUNICATION"
   | "SOLAR"
+  | "WIND_TURBINE"
   | "VEHICLE"
   | "LAB_EQUIPMENT"
   | "OTHER";
@@ -717,5 +718,342 @@ export interface ResilienceSimulationResult {
     estimatedRecoveryMinutes: number;
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// ── SUPERSET ADDITIONS: AUTH, LOGISTICS, RESILIENCE INDEX, TRACE ─────
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Auth & Session ───────────────────────────────────────────────────
+export interface AuthUser {
+  id: string;
+  username: string;
+  fullName: string;
+  role: OperatorRole;
+  stationId?: string; // undefined means all stations authorized
+  email?: string;
+}
+
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+  token: string;
+  expiresAt: string;
+}
+
+// ── Database-Backed Logistics & Cargo Missions ───────────────────────
+export type InventoryTransactionType = "DELIVERY" | "CONSUMPTION" | "ADJUSTMENT" | "TRANSFER";
+
+export interface InventoryTransaction {
+  id: string;
+  stationId: string;
+  itemId: string;
+  transactionType: InventoryTransactionType;
+  quantity: number;
+  previousQuantity: number;
+  newQuantity: number;
+  reason?: string;
+  operatorId?: string;
+  createdAt: Date;
+}
+
+export type CargoMissionStatus = "PLANNED" | "PROCESSING" | "IN_TRANSIT" | "DELIVERED" | "DELAYED" | "CANCELLED";
+
+export interface CargoMission {
+  id: string;
+  code: string;
+  name: string;
+  origin: string;
+  destinationStationId: string;
+  vesselOrAircraft: string;
+  status: CargoMissionStatus;
+  departureDate?: Date;
+  eta: Date;
+  etaConfidencePct: number;
+  maxPayloadKg: number;
+  currentPayloadKg: number;
+  weatherRisk: "LOW" | "MODERATE" | "HIGH" | "SEVERE";
+  deliveryBufferDays: number;
+  createdAt: Date;
+  // Ergonomic aliases
+  missionCode?: string;
+  vesselOrFlight?: string;
+  transportMode?: string;
+  capacityKg?: number;
+  etaConfidence?: number;
+  weatherRiskIndex?: number;
+}
+
+export type CargoRequisitionPriority = "ROUTINE" | "MEDIUM" | "HIGH" | "CRITICAL" | "EMERGENCY";
+export type CargoRequisitionStatus =
+  | "REQUESTED"
+  | "AUTHORITY_APPROVED"
+  | "PROCESSING"
+  | "IN_TRANSIT"
+  | "DELIVERED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export interface CargoRequisition {
+  id: string;
+  stationId: string;
+  itemId: string;
+  itemName: string;
+  category: string;
+  requestedQuantity: number;
+  unit: string;
+  priority: CargoRequisitionPriority;
+  status: CargoRequisitionStatus;
+  reason: string;
+  requestedBy: string;
+  approvedBy?: string;
+  missionId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ── Resupply / Cargo Optimizer ───────────────────────────────────────
+export interface CargoOptimizationItem {
+  itemId: string;
+  name?: string;
+  itemName?: string;
+  category: string;
+  currentStock?: number;
+  dailyConsumption?: number;
+  currentDaysRemaining?: number;
+  recommendedLoadQuantity?: number;
+  allocatedQuantity?: number;
+  unit: string;
+  postDeliveryDaysRemaining?: number;
+  expectedPostDeliveryCoverageDays?: number;
+  urgency?: "CRITICAL" | "HIGH" | "MEDIUM" | "ROUTINE";
+  priority?: "CRITICAL" | "HIGH" | "MEDIUM" | "ROUTINE";
+  allocationWeightKg?: number;
+  estimatedWeightKg?: number;
+  rationale: string;
+}
+
+export type CargoOptimizedItem = CargoOptimizationItem;
+
+export interface CargoOptimizationResult {
+  stationId: string;
+  missionId?: string;
+  missionCode?: string;
+  totalPayloadKg: number;
+  totalAllocatedWeightKg?: number;
+  maxPayloadCapacityKg: number;
+  maxPayloadKg?: number;
+  payloadUtilizationPct: number;
+  winterSurvivalBufferDays: number;
+  recommendedSafetyBufferDays?: number;
+  expectedMeanCoverageDays?: number;
+  items: CargoOptimizationItem[];
+  itemsToLoad?: CargoOptimizationItem[];
+  overallUrgencyRating?: string;
+  rationale?: string;
+  constraintsApplied?: string[];
+  assumptions?: string[];
+  calculatedAt?: string;
+  optimizedAt?: string;
+  label: "COMPUTED / DEMO OPTIMIZER";
+}
+
+// ── Mission Window Planner ───────────────────────────────────────────
+export interface ProposedMissionWindow {
+  id: string;
+  windowStart: string;
+  windowEnd: string;
+  transportMode: string;
+  vehicleDesignator: string;
+  riskBand: "OPTIMAL" | "FAVORABLE" | "MARGINAL" | "HIGH_RISK" | "PROHIBITIVE" | "LOW" | "ACCEPTABLE" | "ELEVATED";
+  confidenceScore: number;
+  environmentalConstraints: string[];
+  communicationStatus: string;
+  deliveryBufferDays: number;
+  recommendedCargoCategories: string[];
+  tacticalAdvisory: string;
+}
+
+export interface MissionWindowOpportunity {
+  windowId: string;
+  startDate: string;
+  endDate: string;
+  durationHours: number;
+  riskBand: "LOW" | "ACCEPTABLE" | "ELEVATED" | "PROHIBITIVE";
+  confidencePct: number;
+  weatherSuitability: {
+    score: number;
+    expectedWindMs: number;
+    expectedTempC: number;
+    blizzardProbabilityPct: number;
+  };
+  commsAvailabilityPct: number;
+  inventoryImpactUrgency: string;
+  recommendation: string;
+  constraints: string[];
+}
+
+export interface MissionWindowPlan {
+  stationId: string;
+  targetMissions?: string[];
+  recommendedWindow?: MissionWindowOpportunity;
+  alternativeWindows?: MissionWindowOpportunity[];
+  proposedWindows?: ProposedMissionWindow[];
+  overallRiskAssessment?: "OPTIMAL" | "LOW" | "MARGINAL" | "ELEVATED" | "HIGH";
+  environmentalFactors?: string[];
+  assumptions?: string[];
+  generatedAt: string;
+  label: "COMPUTED / DEMO PLANNING";
+}
+
+// ── Antarctic Mission Resilience Index ────────────────────────────────
+export interface ResilienceFactorScore {
+  factor: string;
+  weightPct: number;
+  score: number; // 0-100
+  status: "OPTIMAL" | "NOMINAL" | "DEGRADED" | "CRITICAL";
+  rawMetricValue: string;
+  penaltyPoints: number;
+  explanation: string;
+}
+
+export interface MissionResilienceIndex {
+  stationId: string;
+  stationName: string;
+  overallScore: number; // 0-100
+  status: "RESILIENT" | "STABLE" | "DEGRADED" | "EMERGENCY";
+  modelVersion: string;
+  timestamp: string;
+  confidencePct: number;
+  dataQuality: "GOOD" | "SUSPECT" | "BAD";
+  factors: ResilienceFactorScore[];
+  topDegradationDrivers: string[];
+  disclaimer: "Decision-support index; not a real-world certification.";
+}
+
+// ── Station Thresholds & Configuration ───────────────────────────────
+export interface StationThreshold {
+  id: string;
+  stationId: string;
+  metric: string;
+  warningThresholdLow?: number;
+  warningThresholdHigh?: number;
+  criticalThresholdLow?: number;
+  criticalThresholdHigh?: number;
+  updatedBy: string;
+  updatedAt: Date;
+  comment?: string;
+}
+
+export interface ThresholdUpdatePayload {
+  metric: string;
+  warningLow?: number;
+  warningHigh?: number;
+  criticalLow?: number;
+  criticalHigh?: number;
+  comment?: string;
+}
+
+// ── Operational Mission Events ───────────────────────────────────────
+export type MissionEventCategory =
+  | "SENSOR"
+  | "ALERT"
+  | "ENERGY"
+  | "LOGISTICS"
+  | "RESEARCH"
+  | "SYSTEM"
+  | "COMMUNICATION"
+  | "MAINTENANCE"
+  | "MISSION";
+
+export interface MissionEvent {
+  id: string;
+  stationId: string;
+  category: MissionEventCategory;
+  severity: "INFO" | "WARNING" | "CRITICAL";
+  title: string;
+  description: string;
+  assetId?: string;
+  alertId?: string;
+  source: string;
+  provenanceType: string;
+  zone?: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
+// ── Bandwidth & Fast-Lane Telemetry ──────────────────────────────────
+export interface FastLaneDeltaItem {
+  stationId: string;
+  assetId: string;
+  metric: string;
+  val: number;
+  ts: number; // compact unix ms
+  q: number; // 1 = good, 2 = suspect, 3 = bad
+  seq: number;
+}
+
+export interface FastLaneMetrics {
+  stationId: string;
+  queueDepth: number;
+  oldestQueuedEventAgeSec: number;
+  lastSyncTimestamp: string;
+  estimatedLatencyMs: number;
+  averagePayloadBytes: number;
+  compressionRatio: number;
+  bandwidthMode: "BROADBAND" | "FAST_LANE_COMPACT" | "STORE_FORWARD_OFFLINE";
+}
+
+// ── Decision Trace ───────────────────────────────────────────────────
+export interface DecisionTraceRecord {
+  correlationId: string;
+  stationId: string;
+  operatorId?: string;
+  timestamp: string;
+  inputTelemetry: {
+    metric: string;
+    assetId: string;
+    value: number;
+    unit: string;
+    source: string;
+  };
+  evidenceDossier: {
+    deviation: string;
+    zScore: number;
+    thresholdBreached: string;
+  };
+  ruleOrModelVersion: string;
+  propagatedCascade: string[];
+  recommendation: string;
+  operatorActionTaken?: string;
+  auditRefId?: string;
+}
+
+// ── Multi-Hazard Scenario Composer ───────────────────────────────────
+export interface MultiHazardCondition {
+  scenarioType: ResilienceScenarioType;
+  severity: "WARNING" | "CRITICAL";
+  parameters: Record<string, unknown>;
+}
+
+export interface MultiHazardComposerInput {
+  stationId: string;
+  title: string;
+  conditions: MultiHazardCondition[];
+  durationHours: number;
+  deterministicSeed?: number | string;
+}
+
+export interface MultiHazardSimulationResult extends ResilienceSimulationResult {
+  multiConditions: MultiHazardCondition[];
+  firstOrderEffects: string[];
+  secondOrderEffects: string[];
+  compoundInteractions: string[];
+  assumptions: string[];
+}
+
 
 

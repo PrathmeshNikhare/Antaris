@@ -10,15 +10,19 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Overview", icon: "⊞" },
   { to: "/twin", label: "Digital Twin", icon: "❖" },
+  { to: "/alerts", label: "Alerts & Incidents", icon: "🚨" },
+  { to: "/sensors", label: "Sensors", icon: "📡" },
+  { to: "/events", label: "Mission Events", icon: "📜" },
   { to: "/infrastructure", label: "Infrastructure", icon: "⚙" },
   { to: "/energy", label: "Energy Grid", icon: "⚡" },
   { to: "/logistics", label: "Logistics", icon: "📦" },
   { to: "/environment", label: "Environment", icon: "❄" },
   { to: "/intelligence", label: "Intelligence", icon: "◈" },
   { to: "/simulations", label: "Simulations", icon: "▷" },
-  { to: "/copilot", label: "Ops Copilot", icon: "◈" },
+  { to: "/copilot", label: "Ops Copilot", icon: "🤖" },
   { to: "/reports", label: "Snapshots & Reports", icon: "▤" },
   { to: "/audit", label: "Audit Log", icon: "📋" },
+  { to: "/settings", label: "Mission Settings", icon: "🔧" },
   { to: "/demo", label: "Demo Control", icon: "🎮" },
 ];
 

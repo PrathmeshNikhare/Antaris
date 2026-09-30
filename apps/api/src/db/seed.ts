@@ -1,5 +1,6 @@
 import { getPool, closePool } from "./pool";
 import { maitriBharatiSeedData } from "./seeds/maitri_bharati_seeds";
+import { hashPassword } from "../auth/crypto";
 
 export async function runSeeds(): Promise<void> {
   const pool = getPool();
@@ -275,21 +276,35 @@ export async function runSeeds(): Promise<void> {
     }
     console.log(`[seed] Seeded ${hardeningSeedData.maintenanceEvents.length} maintenance events.`);
 
-    // 11. Operators
+    // 11. Operators with secure scrypt password hash
+    await client.query("DELETE FROM operators;");
+    const defaultPasswordHash = hashPassword("antigravity2026");
     for (const op of hardeningSeedData.operators) {
       await client.query(
         `
-        INSERT INTO operators (id, username, full_name, role, station_id, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO operators (id, username, full_name, role, station_id, password_hash, email, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (id) DO UPDATE SET
+          username = EXCLUDED.username,
           full_name = EXCLUDED.full_name,
           role = EXCLUDED.role,
-          station_id = EXCLUDED.station_id;
+          station_id = EXCLUDED.station_id,
+          password_hash = EXCLUDED.password_hash,
+          email = EXCLUDED.email;
       `,
-        [op.id, op.username, op.fullName, op.role, op.stationId ?? null, op.createdAt ?? new Date()]
+        [
+          op.id,
+          op.username,
+          op.fullName,
+          op.role,
+          op.stationId ?? null,
+          defaultPasswordHash,
+          `${op.username}@antarctica.gov.in`,
+          op.createdAt ?? new Date(),
+        ]
       );
     }
-    console.log(`[seed] Seeded ${hardeningSeedData.operators.length} operators.`);
+    console.log(`[seed] Seeded ${hardeningSeedData.operators.length} operators with authentication credentials.`);
 
     // 12. Audit Events
     for (const ae of hardeningSeedData.auditEvents) {
@@ -317,6 +332,146 @@ export async function runSeeds(): Promise<void> {
       );
     }
     console.log(`[seed] Seeded ${hardeningSeedData.auditEvents.length} audit events.`);
+
+    // 13. Cargo Missions
+    for (const cm of hardeningSeedData.cargoMissions) {
+      await client.query(
+        `
+        INSERT INTO cargo_missions (
+          id, code, name, origin, destination_station_id, vessel_or_aircraft,
+          status, departure_date, eta, eta_confidence_pct, max_payload_kg,
+          current_payload_kg, weather_risk, delivery_buffer_days, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ON CONFLICT (id) DO UPDATE SET
+          code = EXCLUDED.code,
+          name = EXCLUDED.name,
+          status = EXCLUDED.status,
+          eta = EXCLUDED.eta,
+          eta_confidence_pct = EXCLUDED.eta_confidence_pct,
+          current_payload_kg = EXCLUDED.current_payload_kg;
+      `,
+        [
+          cm.id,
+          cm.code,
+          cm.name,
+          cm.origin,
+          cm.destinationStationId,
+          cm.vesselOrAircraft,
+          cm.status,
+          cm.departureDate ?? null,
+          cm.eta,
+          cm.etaConfidencePct,
+          cm.maxPayloadKg,
+          cm.currentPayloadKg,
+          cm.weatherRisk,
+          cm.deliveryBufferDays,
+          cm.createdAt,
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.cargoMissions.length} cargo missions.`);
+
+    // 14. Cargo Requisitions
+    for (const cr of hardeningSeedData.cargoRequisitions) {
+      await client.query(
+        `
+        INSERT INTO cargo_requisitions (
+          id, station_id, item_id, item_name, category, requested_quantity,
+          unit, priority, status, reason, requested_by, approved_by, mission_id, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ON CONFLICT (id) DO UPDATE SET
+          status = EXCLUDED.status,
+          requested_quantity = EXCLUDED.requested_quantity,
+          priority = EXCLUDED.priority,
+          approved_by = EXCLUDED.approved_by,
+          mission_id = EXCLUDED.mission_id,
+          updated_at = EXCLUDED.updated_at;
+      `,
+        [
+          cr.id,
+          cr.stationId,
+          cr.itemId,
+          cr.itemName,
+          cr.category,
+          cr.requestedQuantity,
+          cr.unit,
+          cr.priority,
+          cr.status,
+          cr.reason,
+          cr.requestedBy,
+          cr.approvedBy ?? null,
+          cr.missionId ?? null,
+          cr.createdAt,
+          cr.updatedAt,
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.cargoRequisitions.length} cargo requisitions.`);
+
+    // 15. Station Thresholds
+    for (const st of hardeningSeedData.stationThresholds) {
+      await client.query(
+        `
+        INSERT INTO station_thresholds (
+          id, station_id, metric, warning_threshold_low, warning_threshold_high,
+          critical_threshold_low, critical_threshold_high, updated_by, updated_at, comment
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (id) DO UPDATE SET
+          warning_threshold_low = EXCLUDED.warning_threshold_low,
+          warning_threshold_high = EXCLUDED.warning_threshold_high,
+          critical_threshold_low = EXCLUDED.critical_threshold_low,
+          critical_threshold_high = EXCLUDED.critical_threshold_high,
+          updated_at = EXCLUDED.updated_at;
+      `,
+        [
+          st.id,
+          st.stationId,
+          st.metric,
+          st.warningThresholdLow ?? null,
+          st.warningThresholdHigh ?? null,
+          st.criticalThresholdLow ?? null,
+          st.criticalThresholdHigh ?? null,
+          st.updatedBy,
+          st.updatedAt,
+          st.comment ?? null,
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.stationThresholds.length} station thresholds.`);
+
+    // 16. Operational Mission Events
+    for (const me of hardeningSeedData.missionEvents) {
+      await client.query(
+        `
+        INSERT INTO mission_events (
+          id, station_id, category, severity, title, description,
+          source, provenance_type, zone, metadata, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (id) DO UPDATE SET
+          title = EXCLUDED.title,
+          description = EXCLUDED.description,
+          severity = EXCLUDED.severity;
+      `,
+        [
+          me.id,
+          me.stationId,
+          me.category,
+          me.severity,
+          me.title,
+          me.description,
+          me.source,
+          me.provenanceType,
+          me.zone ?? null,
+          JSON.stringify(me.metadata),
+          me.createdAt,
+        ]
+      );
+    }
+    console.log(`[seed] Seeded ${hardeningSeedData.missionEvents.length} operational mission events.`);
 
     await client.query("COMMIT");
     console.log("[seed] All seeds executed successfully!");

@@ -85,7 +85,6 @@ export class AnomalyService {
   ): AnomalyResult {
     const key = this.getStreamKey(point.stationId, point.assetId, point.metric);
     let stationMap = this.activeAnomalies.get(point.stationId);
-    const wasAnomaly = !!stationMap?.has(key);
 
     const effectiveThresholds = thresholds || this.metricThresholds.get(point.metric);
 

@@ -1,6 +1,7 @@
 import { BaselineGenerator, SENSOR_DEFINITIONS, SensorConfig } from "./baseline";
 import { AnomalyManager, AnomalyDefinition } from "./anomalies";
 import { OfflineBufferQueue, ReplayBatchResult } from "./buffer";
+import { PRNG } from "./prng";
 import type { MqttManager } from "../mqtt/client";
 import type {
   SimulatorMode,
@@ -25,6 +26,7 @@ export class TelemetrySimulator {
   private anomalyMgr: AnomalyManager;
   private bufferQueue: OfflineBufferQueue;
   private sensors: SensorConfig[];
+  private prng: PRNG;
 
   private mode: SimulatorMode = "normal";
   private connectivityState: ConnectivityState = "NORMAL";
@@ -43,6 +45,7 @@ export class TelemetrySimulator {
     this.mode = options.initialMode ?? "normal";
     this.connectivityState = options.initialConnectivity ?? "NORMAL";
     this.baselineGen = new BaselineGenerator(options.seed ?? 42);
+    this.prng = new PRNG(options.seed ?? 42);
     this.anomalyMgr = new AnomalyManager();
     this.bufferQueue = new OfflineBufferQueue(10000, options.bufferPersistencePath);
     this.sensors = options.sensors ?? SENSOR_DEFINITIONS;
@@ -115,11 +118,11 @@ export class TelemetrySimulator {
       if (isCommsAsset && !hasActiveAnomaly) {
         if (this.connectivityState === "DEGRADED") {
           if (sensor.metric === "packet_loss_pct") {
-            envelope.value = 30.0 + Number(((Math.random() * 2) - 1).toFixed(1));
+            envelope.value = 30.0 + Number(this.prng.range(-1, 1).toFixed(1));
           } else if (sensor.metric === "latency_ms") {
-            envelope.value = 1450.0 + Number(((Math.random() * 80) - 40).toFixed(0));
+            envelope.value = 1450.0 + Number(this.prng.range(-40, 40).toFixed(0));
           } else if (sensor.metric === "snr_db") {
-            envelope.value = 7.5 + Number(((Math.random() * 0.4) - 0.2).toFixed(1));
+            envelope.value = 7.5 + Number(this.prng.range(-0.2, 0.2).toFixed(1));
           }
         } else if (this.connectivityState === "OFFLINE") {
           if (sensor.metric === "packet_loss_pct") {
@@ -146,7 +149,7 @@ export class TelemetrySimulator {
           this.lastSuccessfulSync = simulatedDate;
         } else {
           // 70% chance of immediate delivery, 30% routed to edge buffer for later sync
-          const dropped = Math.random() < 0.3;
+          const dropped = this.prng.next() < 0.3;
           if (dropped) {
             this.bufferQueue.enqueue(envelope, topic);
           } else {

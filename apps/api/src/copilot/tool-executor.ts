@@ -12,10 +12,9 @@ import type { AllowedToolName } from "./tool-definitions";
 import { ALLOWED_TOOLS } from "./tool-definitions";
 import { getTwinRegistry } from "../twin/registry";
 import { intelligenceService } from "../intelligence";
-import { simulationStore, resilienceEngine } from "../simulation";
+import { simulationStore } from "../simulation";
 import { StationRepository, AssetRepository, AlertRepository } from "../repositories";
 import { AuditRepository } from "../repositories";
-import type { ResilienceScenarioType, SimulationParameters } from "@maitri-bharati/shared";
 
 export interface ToolResult {
   toolName: string;
@@ -36,7 +35,7 @@ let assetRepo: AssetRepository;
 let alertRepo: AlertRepository;
 let auditRepo: AuditRepository;
 
-function getRepos() {
+function getRepos(): { stationRepo: StationRepository; assetRepo: AssetRepository; alertRepo: AlertRepository; auditRepo: AuditRepository } {
   if (!stationRepo) stationRepo = new StationRepository();
   if (!assetRepo) assetRepo = new AssetRepository();
   if (!alertRepo) alertRepo = new AlertRepository();
@@ -213,30 +212,42 @@ async function executeApprovedTool(
     // ── Asset Telemetry History ───────────────────────────────────
     case "get_asset_history": {
       const stationId = resolveStation(args);
+      const assetId = args.assetId as string;
       const metric = (args.metric as string) || "power_output_kw";
       const limit = parseInt((args.limit as string) || "24", 10);
 
-      // Use the telemetry repository
-      const { default: pool } = await import("../db/pool");
-      const result = await pool.query(
-        `SELECT value, unit, timestamp, source, quality FROM telemetry
-         WHERE station_id = $1 AND metric = $2
-         ORDER BY timestamp DESC LIMIT $3`,
-        [stationId, metric, limit]
-      );
+      if (!assetId) {
+        return {
+          toolName,
+          success: false,
+          data: null,
+          provenance: { source: "DATABASE", dataType: "HISTORICAL", timestamp: now },
+          error: "assetId is required for get_asset_history to prevent ambiguous cross-asset leakage",
+        };
+      }
+
+      // Use the telemetry repository / pool
+      const { getPool } = await import("../db/pool");
+      const pool = getPool();
+      const query = `SELECT value, unit, timestamp, source, quality FROM telemetry_points
+         WHERE station_id = $1 AND asset_id = $2 AND metric = $3
+         ORDER BY timestamp DESC LIMIT $4`;
+      const result = await pool.query(query, [stationId, assetId, metric, limit]);
 
       return {
         toolName,
         success: true,
         data: {
           stationId,
+          assetId,
           metric,
           pointCount: result.rows.length,
-          points: result.rows.map((r: any) => ({
-            value: parseFloat(r.value),
+          points: result.rows.map((r: { value: string | number; unit: string; timestamp: string | Date; quality: string; source: string }) => ({
+            value: parseFloat(String(r.value)),
             unit: r.unit,
             timestamp: r.timestamp,
             quality: r.quality,
+            source: r.source === "SIMULATOR" ? "SIMULATED" : r.source,
           })),
         },
         provenance: {
@@ -420,6 +431,19 @@ async function executeApprovedTool(
       const assetId = args.assetId as string;
       const registry = getTwinRegistry();
       await registry.init();
+      const twinState = registry.getTwinState(stationId);
+      const assetBelongs = twinState?.assets.some((a) => a.assetId === assetId);
+
+      if (!assetBelongs) {
+        return {
+          toolName,
+          success: false,
+          data: null,
+          provenance: { source: "DIGITAL_TWIN", dataType: "COMPUTED", timestamp: now },
+          error: `Asset '${assetId}' does not belong to station '${stationId}'. Cross-station dependency leakage prohibited.`,
+        };
+      }
+
       const impact = registry.getDependencyGraph().getDownstreamImpact(assetId);
 
       return {
@@ -427,7 +451,6 @@ async function executeApprovedTool(
         success: true,
         data: {
           stationId,
-          rootAssetId: assetId,
           ...impact,
         },
         provenance: {
@@ -439,64 +462,10 @@ async function executeApprovedTool(
       };
     }
 
-    // ── Simulation Result ────────────────────────────────────────
+    // ── Simulation Result (Strictly Read-Only) ────────────────────
+    case "get_latest_simulation":
     case "get_simulation_result": {
       const stationId = resolveStation(args);
-
-      // If a scenarioType is specified, run a fresh simulation
-      if (args.scenarioType) {
-        const params: SimulationParameters = {
-          scenarioType: args.scenarioType as ResilienceScenarioType,
-        };
-        if (args.durationHours) {
-          params.durationHours = parseFloat(args.durationHours as string);
-        }
-        const result = resilienceEngine.runSimulation(
-          stationId,
-          args.scenarioType as ResilienceScenarioType,
-          params
-        );
-
-        return {
-          toolName,
-          success: true,
-          data: {
-            simulationId: result.simulationId,
-            scenarioType: result.scenarioType,
-            title: result.title,
-            label: "SIMULATION",
-            explanation: result.explanation,
-            riskScore: result.operationalRisk.score,
-            riskLevel: result.operationalRisk.level,
-            riskFactors: result.operationalRisk.factors,
-            impactedAssetCount: result.impactedAssets.length,
-            impactedAssets: result.impactedAssets.slice(0, 5).map((a) => ({
-              name: a.assetName,
-              baselineHealth: a.baselineHealth,
-              simulatedHealth: a.simulatedHealth,
-              failureCause: a.failureCause,
-            })),
-            keyComparisons: result.comparisons.slice(0, 5).map((c) => ({
-              metric: c.metric,
-              baseline: c.baseline,
-              scenario: c.scenario,
-              severity: c.severity,
-              reason: c.reason,
-            })),
-            recoveryActions: result.recoveryState.suggestedActions,
-            estimatedRecoveryMinutes: result.recoveryState.estimatedRecoveryMinutes,
-          },
-          provenance: {
-            source: "SIMULATION_ENGINE",
-            dataType: "SIMULATED",
-            timestamp: now,
-            disclaimer:
-              "⚠️ SIMULATION: These values are from a deterministic what-if model, NOT measured readings. Actual outcomes may differ.",
-          },
-        };
-      }
-
-      // Otherwise return the latest simulation
       const history = simulationStore.listByStation(stationId, 1);
       if (history.length === 0) {
         return {
@@ -517,29 +486,42 @@ async function executeApprovedTool(
           title: latest.title,
           label: "SIMULATION",
           explanation: latest.explanation,
-          riskScore: latest.operationalRisk.score,
-          riskLevel: latest.operationalRisk.level,
+          riskScore: latest.operationalRisk?.score,
+          riskLevel: latest.operationalRisk?.level,
+          comparisons: latest.comparisons?.slice(0, 5),
+          recoveryActions: latest.recoveryState?.suggestedActions,
           createdAt: latest.createdAt,
         },
         provenance: {
           source: "SIMULATION_ENGINE",
           dataType: "SIMULATED",
           timestamp: now,
-          disclaimer: "⚠️ SIMULATION: Values from a previous what-if analysis.",
+          disclaimer: "⚠️ SIMULATION: Read-only inspection of previous what-if analysis. New mutations require explicit operator confirmation outside copilot.",
         },
       };
     }
 
-    // ── Recent Operator Actions ──────────────────────────────────
+    // ── Recent Operator Actions (Station-Scoped) ─────────────────
     case "get_recent_operator_actions": {
+      const stationId = resolveStation(args);
       const limit = parseInt((args.limit as string) || "10", 10);
       const repos = getRepos();
-      const events = await repos.auditRepo.findAll(limit);
+      const allEvents = await repos.auditRepo.findAll(limit * 3);
+      // Filter strictly by stationId
+      const events = allEvents
+        .filter((e) => {
+          const target = String(e.targetId || "");
+          const prev = JSON.stringify(e.previousState || {});
+          const next = JSON.stringify(e.newState || {});
+          return target.includes(stationId) || prev.includes(stationId) || next.includes(stationId);
+        })
+        .slice(0, limit);
 
       return {
         toolName,
         success: true,
         data: {
+          stationId,
           totalReturned: events.length,
           actions: events.map((e) => ({
             action: e.action,
@@ -554,6 +536,7 @@ async function executeApprovedTool(
           source: "DATABASE",
           dataType: "HISTORICAL",
           timestamp: now,
+          disclaimer: "Station-scoped audit log entries",
         },
       };
     }

@@ -1,5 +1,4 @@
 import { getTwinRegistry } from "../twin";
-import { TwinDependencyGraph } from "../twin/dependency-graph";
 import { simulationStore } from "./simulation-store";
 import type {
   TwinState,
@@ -11,7 +10,6 @@ import type {
   ImpactedAssetSummary,
   BlastRadiusNode,
   BlastRadiusEdge,
-  Criticality,
 } from "@maitri-bharati/shared";
 
 export class ResilienceSimulationEngine {
@@ -106,12 +104,12 @@ export class ResilienceSimulationEngine {
               simStatus = "DEGRADED";
               simHealth = 40;
               cause = "Deep cycle emergency discharge sustaining station load";
-            } else if (a.type === "WATER") {
-              simStatus = "CRITICAL";
+            } else if (a.type === "WATER_SYSTEM") {
+              simStatus = "FAILED";
               simHealth = 20;
               cause = "Trace heating loss on Priyadarshini water pipeline; imminent freeze hazard";
             } else if (a.type === "COMMUNICATION") {
-              simStatus = "WARNING";
+              simStatus = "DEGRADED";
               simHealth = 55;
               cause = "Transferred to emergency UPS battery buffer";
             } else if (a.type === "HVAC") {
@@ -153,7 +151,7 @@ export class ResilienceSimulationEngine {
         scenarioState.energy.totalGenerationKw = simulatedGenKw;
         scenarioState.energy.batterySocPct = simulatedSoc;
         scenarioState.energy.netPowerKw = simulatedReserveKw;
-        scenarioState.energy.gridStatus = simulatedReserveKw < 0 ? "DEFICIT" : "BALANCED";
+        scenarioState.energy.gridStatus = simulatedReserveKw < 0 ? "DEFICIT" : (simulatedReserveKw > 20 ? "SURPLUS" : "STABLE");
 
         // Operational risk
         const hoursFactor = Math.min(20, Math.round(durationHours * 3.5));
@@ -331,7 +329,7 @@ export class ResilienceSimulationEngine {
         const simHealth = Math.max(8, Math.round(92 * (1 - (degPct / 100) * 0.88)));
 
         if (targetBat) {
-          targetBat.status = degPct >= 60 ? "CRITICAL" : "DEGRADED";
+          targetBat.status = degPct >= 60 ? "FAILED" : "DEGRADED";
           targetBat.healthScore = simHealth;
           impactedAssets.push({
             assetId: targetBat.assetId,
@@ -358,14 +356,14 @@ export class ResilienceSimulationEngine {
         if (durationHours > simBufferHours) {
           const hvac = scenarioState.assets.find((a) => a.type === "HVAC");
           if (hvac) {
-            hvac.status = "WARNING";
+            hvac.status = "DEGRADED";
             hvac.healthScore = Math.max(35, hvac.healthScore - 25);
             impactedAssets.push({
               assetId: hvac.assetId,
               assetName: hvac.name,
               assetType: hvac.type,
               baselineStatus: "OPERATIONAL",
-              simulatedStatus: "WARNING",
+              simulatedStatus: "DEGRADED",
               baselineHealth: 87,
               simulatedHealth: hvac.healthScore,
               failureCause: `Battery buffer exhausted after ${simBufferHours}h during ${durationHours}h test; non-essential thermal trim`,
@@ -609,7 +607,7 @@ export class ResilienceSimulationEngine {
 
         const hvac = scenarioState.assets.find((a) => a.type === "HVAC");
         if (hvac) {
-          hvac.status = loadFactorPct > 100 ? "CRITICAL" : "WARNING";
+          hvac.status = loadFactorPct > 100 ? "FAILED" : "DEGRADED";
           hvac.healthScore = Math.max(30, 87 - Math.round(tempDelta * 1.05 + durationHours * 0.4));
           impactedAssets.push({
             assetId: hvac.assetId,
@@ -624,9 +622,9 @@ export class ResilienceSimulationEngine {
           });
         }
 
-        const waterSys = scenarioState.assets.find((a) => a.type === "WATER_SYSTEM" || a.type === ("WATER" as any));
+        const waterSys = scenarioState.assets.find((a) => a.type === "WATER_SYSTEM");
         if (waterSys) {
-          waterSys.status = simTemp <= -40 ? "WARNING" : "OPERATIONAL";
+          waterSys.status = simTemp <= -40 ? "DEGRADED" : "OPERATIONAL";
           waterSys.healthScore = Math.max(30, 86 - Math.round(tempDelta * 0.8));
           impactedAssets.push({
             assetId: waterSys.assetId,
@@ -752,7 +750,7 @@ export class ResilienceSimulationEngine {
         // Wind turbine mechanical storm lock
         const windTurbine = scenarioState.assets.find(
           (a) =>
-            a.type === ("WIND_TURBINE" as any) ||
+            a.type === "WIND_TURBINE" ||
             a.name.toLowerCase().includes("wind") ||
             a.assetId.toLowerCase().includes("wnd")
         );
@@ -779,7 +777,6 @@ export class ResilienceSimulationEngine {
         const solar = scenarioState.assets.find(
           (a) =>
             a.type === "SOLAR" ||
-            a.type === ("SOLAR_ARRAY" as any) ||
             a.name.toLowerCase().includes("solar") ||
             a.assetId.toLowerCase().includes("sol")
         );
@@ -989,7 +986,7 @@ export class ResilienceSimulationEngine {
           {
             id: "node-curtail",
             label: "Load Shed Controller",
-            domain: "OPERATIONS",
+            domain: "INFRASTRUCTURE",
             severity: "NORMAL",
             status: "ACTIVE",
             impactDescription: `Curtailed ${savedKw} kW non-essential science load`,

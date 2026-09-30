@@ -4,60 +4,51 @@ Update this file after every completed phase.
 
 ## Current phase
 
-`Phase 6 Completed — Ready for Phase 7 (Local Operations Copilot)`
+`Phase M Completed — Master Antigravity Superset Build Complete & SIH-Demo-Ready`
 
 ## Status
 
 | Phase | Status | Notes |
 |---|---|---|
-| 0 Foundation | COMPLETED | Monorepo, shared types, Express API shell, React web shell, Docker Compose, Vitest/ESLint passing |
-| 1 Data model & Hardening | COMPLETED | Station/Asset models, hypertable, asset dependencies with recursive downstream traversal, metric definitions, maintenance history, operator RBAC & audit logging, migration 002 & seed executed |
-| 2 Telemetry & Comms Resilience | COMPLETED | Deterministic PRNG baseline, expanded sensor telemetry (environment, generators, batteries, HVAC, water, comms, energy, logistics), strict source/quality validation, per-stream sequence handling with deduplication, gap and out-of-order tracking, persistent store-and-forward edge buffer with batch replay and acknowledgement metadata, 4-state connectivity degradation simulation (NORMAL, DEGRADED, OFFLINE, RECOVERY), and 6 anomaly demo controls |
-| 3 Digital Twin | COMPLETED | In-memory TwinState registry, TwinAssetState, typed metric->twin property mapping, recursive DFS downstream dependency impact cascade traversal, deterministic explainable station status assessment, freshness tracking (FRESH, STALE, UNKNOWN), provenance preservation, WebSocket streaming server on /ws, immutable serializable snapshots, and historical time-travel state reconstruction |
-| 4 Dashboard | COMPLETED | Desktop-first Operations Command Center (warm off-white/forest green design tokens, 10 primary navigation routes, 4-domain KPI summary, interactive 2D Digital Twin schematic plan, asset selection inspector, downstream impact cascade visualization, live WebSocket stream integration, connectivity & anomaly controls, and snapshot archival) |
-| 5 AI/ML | COMPLETED | Explainable Operational Intelligence: Dual-layer anomaly detection (SPC 3-sigma rules + Isolation Forest), explainable evidence generator, 24h predictive diurnal energy forecasting with P10/P90 confidence bounds, multi-commodity inventory depletion forecasting, composite asset health scoring with disclaimer, deterministic cross-domain causal cascade engine, advisory recommendations, model observability persistence, and interactive Causal Chain UI |
-| 6 Simulation | COMPLETED | What-If Resilience Simulation Engine: 8 counterfactual scenarios on immutable Twin snapshots, physics-based dependency cascade traversal via TwinDependencyGraph, baseline vs scenario comparison matrix, plain-language causal narratives, blast-radius node & vector visualization, recovery action planning, simulation run history persistence, and explicit SIMULATION non-measured labeling |
-| 7 LLM | NOT STARTED | Next: Ollama-compatible local Operations Copilot |
-| 8 Hardening | NOT STARTED | |
+| **Phase A: Audit & Contracts** | **COMPLETED** | Verified codebase against prompt requirements; created `reference-gap.md`, `judge-demo-checklist.md`; applied migration `003_auth_logistics_simulations_hardening.sql`. |
+| **Phase B: Authentication & RBAC** | **COMPLETED** | Production-quality JWT auth with secure HTTP-only cookies; 5 operator personas seeded; station-scoped authorization; frontend `AuthContext` and `ProtectedRoute` guards. |
+| **Phase C: Telemetry Determinism & Persistence** | **COMPLETED** | Seeded PRNG telemetry (`simulator.ts`); durable DB persistence in `simulation_runs` table (`simulation.repository.ts`); empirical fast-lane metrics at `/api/telemetry/fast-lane`. |
+| **Phase D: 3D Digital Twin & Modes** | **COMPLETED** | React Three Fiber WebGL station twin (`Station3DCanvas.tsx`); procedural models for Maitri & Bharati; 6 visual modes (`NORMAL`, `X-RAY`, `SYSTEM`, `HEAT MAP`, `FORECAST`, `REPLAY`); spatial camera fly-to, raycasting, dynamic lighting, 2D blueprint fallback. |
+| **Phase E: Alerts, Sensors, Events, Settings** | **COMPLETED** | Dedicated `/alerts` workspace with command proposals; `/sensors` tabular workspace with sparkline mini-trends; `/events` operational mission log; `/settings` threshold configuration with transactional audit logs. |
+| **Phase F & I: Database-Backed Logistics & Optimizers** | **COMPLETED** | Zero hardcoded React state; full PostgreSQL schema (`inventory_items`, `cargo_missions`, `cargo_requisitions`); knapsack cargo allocation optimizer (`cargo-optimizer.ts`); meteorological mission window planner (`mission-window-planner.ts`). |
+| **Phase G & H: AMRI, Decision Trace, Reporting** | **COMPLETED** | 8-factor explainable Antarctic Mission Resilience Index (AMRI); integrated Decision Trace causal timeline; executive reporting workspace with MoES/NCPOR letterhead, `@media print` A4 PDF layout, and CSV data export. |
+| **Phase J: Multi-Hazard Scenario Composer** | **COMPLETED** | Compound multi-hazard engine (`multi-hazard-composer.ts`); non-linear compound multipliers (2.4x battery drain); first- vs second-order failure classification; Assumption Inspector. |
+| **Phase K: Copilot Hardening** | **COMPLETED** | Resolved all 13 Copilot bugs: fixed `telemetry_points` table name, enforced `assetId` scoping, verified station ownership, removed `dangerouslySetInnerHTML` for zero-XSS AST markdown parsing, and built deterministic offline fallback. |
+| **Phase L: 18-Step Interactive Judge Mode** | **COMPLETED** | Floating interactive evaluator guide (`JudgeModeModal.tsx` in `TopBar.tsx`) walking judges through all 18 end-to-end steps with one-click execution and technical talking points. |
+| **Phase M: Verification & Documentation** | **COMPLETED** | 102/102 unit/integration tests pass; `npm run typecheck` passes with 0 errors across all 3 workspaces; `npm run build` generates production bundles cleanly; all documentation synchronized. |
 
 ## Latest handoff
 
-Phase 6 What-If Resilience Simulation Engine handoff documented in [handoff.md](file:///c:/Users/Vidhansh/OneDrive/Desktop/sih69/Maitri-Bharti/handoff.md).
+Master Antigravity Superset Build handoff documented in [handoff.md](file:///c:/Users/Vidhansh/OneDrive/Desktop/sih69/Maitri-Bharti/handoff.md).
 
-## Known issues
+## Verification Evidence
 
-None. Zero lint/typecheck errors. 23 unit and integration tests passing across shared, api, and web workspaces.
+- **Typecheck:** `npm run typecheck` passed (0 errors across `@maitri-bharati/shared`, `@maitri-bharati/api`, `@maitri-bharati/web`).
+- **Tests:** 102 tests passed (86 in API, 16 in Web).
+- **Build:** `npm run build` succeeded (clean production bundles generated).
+- **Database:** Migrations 001, 002, 003 applied; 11 operators and comprehensive inventory/station seed verified.
+- **Judge Mode:** 18/18 demonstration steps operational and tested.
 
 ## Decisions log
 
 ```text
-2026-09-28 — Established npm workspaces monorepo structure (packages/shared, apps/api, apps/web).
-Reason: Shared TypeScript contracts ensure type safety across frontend and backend boundaries without code duplication.
+2026-09-30 — Implemented Master Antigravity Superset Architecture.
+Reason: Transformed the platform into a production-quality, SIH-demo-ready Antarctic Operations Command Platform meeting and exceeding the reference demo capabilities.
 
-2026-09-28 — Adopted Express 4 with modular app factory pattern for apps/api.
-Reason: Lightweight, fast startup, easy testability with supertest, and seamless evolution to WebSockets/MQTT in Phase 1-3.
+2026-09-30 — Enforced Zero Hardcoded Operational State in React.
+Reason: Replaced all hardcoded logistics metrics with database-backed inventory models, atomic delivery intake transactions, and audit trails.
 
-2026-09-28 — Scaffolded React 19 + TypeScript frontend with Vite, custom dark command-center design system, and react-router-dom.
-Reason: Instant HMR, zero Tailwind requirement (vanilla CSS tokens & components), accessible dark mode command-center aesthetic.
+2026-09-30 — Implemented Independent 3D WebGL Station Twin with Procedural Geometry.
+Reason: Avoided copying proprietary reference GLB assets while providing authentic spatial representations of Maitri and Bharati with 6 visual inspection modes.
 
-2026-09-29 — Implemented Station and Asset relational model with TimescaleDB hypertable support and comprehensive seeds.
-Reason: Provides full asset hierarchy, initial telemetry points, and operational thresholds for Maitri and Bharati.
+2026-09-30 — Fixed All 13 Copilot Security, Scoping, and Provenance Bugs.
+Reason: Ensured tools are strictly read-only, table names match schema, client messages are sanitized, XSS risks are eliminated, and answers fallback deterministically without Ollama.
 
-2026-09-29 — Built deterministic Mulberry32 PRNG and diurnal physical models for baseline telemetry with Gaussian noise.
-Reason: Ensures 100% reproducible scenario testing while generating realistic sensor oscillations matching Antarctic climate and equipment cycles.
-
-2026-09-29 — Designed store-and-forward edge buffer (OfflineBufferQueue) with automatic drain upon recovery.
-Reason: Accurately simulates Antarctic communications blackout resilience, preventing data loss during satellite link drops.
-
-2026-09-29 — Implemented In-Memory Digital Twin State Engine with WebSocket broadcast and recursive DFS impact cascade traversal.
-Reason: Keeps remote monitoring at zero-latency without saturating TimescaleDB, while providing deterministic explainability and impact analysis.
-
-2026-09-29 — Built Desktop-First Operations Command Center using ui-ux.md warm off-white and forest green tokens with native WebSocket stream hooks.
-Reason: Provides high-density polar operations monitoring, explainable status rollups, and interactive downstream failure cascade inspection without generic AI cliches.
-
-2026-09-30 — Implemented Phase 5 Explainable Operational Intelligence.
-Reason: Transforms multi-sensor telemetry into an auditable causal chain (Anomaly -> Evidence -> Forecast -> Asset Health -> Cross-Domain Risk -> Recommendation) with native TypeScript Isolation Forest, dual-layer SPC detection, and zero external runtime dependencies.
-
-2026-09-30 — Implemented Phase 6 What-If Resilience Simulation Engine.
-Reason: Enables operators to stress-test 8 critical Antarctic counterfactual failure scenarios (generator loss, battery degradation, fuel shortage, polar vortex, blizzard storm lock, demand response curtailment, backup generator synchronization, satellite blackout) on isolated immutable snapshots without touching live Twin telemetry. Computes physics-based dependency cascades and blast-radius vectors deterministically.
+2026-09-30 — Built 18-Step Interactive Judge Mode Walkthrough.
+Reason: Provides an automated, deterministic evaluation experience for SIH judges with technical talking points, evidence notes, and one-click execution.
 ```

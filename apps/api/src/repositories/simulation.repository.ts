@@ -66,4 +66,103 @@ export class SimulationRepository {
     );
     return mapRowToSimulation(res.rows[0]);
   }
+
+  async saveResilienceResult(result: any): Promise<void> {
+    try {
+      const pool = getPool();
+      await pool.query(
+        `INSERT INTO simulation_runs (
+          id, station_id, scenario_type, title, label, model_version,
+          deterministic_seed, parameters, input_state, output_state,
+          impacts, comparisons, blast_radius, operational_risk,
+          recovery_state, explanation, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT (id) DO UPDATE SET
+          title = EXCLUDED.title,
+          output_state = EXCLUDED.output_state,
+          impacts = EXCLUDED.impacts,
+          comparisons = EXCLUDED.comparisons,
+          blast_radius = EXCLUDED.blast_radius,
+          operational_risk = EXCLUDED.operational_risk,
+          recovery_state = EXCLUDED.recovery_state,
+          explanation = EXCLUDED.explanation;`,
+        [
+          result.simulationId,
+          result.stationId,
+          result.scenarioType,
+          result.title || result.scenarioType,
+          result.label || "SIMULATION",
+          result.modelVersion || "2.1.0-polar",
+          result.deterministicSeed || "42",
+          JSON.stringify(result.parameters || {}),
+          JSON.stringify(result.baselineSnapshot || {}),
+          JSON.stringify(result.scenarioState || {}),
+          JSON.stringify(result.impactedAssets || []),
+          JSON.stringify(result.comparisons || []),
+          JSON.stringify(result.blastRadius || { nodes: [], links: [] }),
+          JSON.stringify(result.operationalRisk || { score: 0, level: "LOW", factors: [] }),
+          JSON.stringify(result.recoveryState || { suggestedActions: [], estimatedRecoveryMinutes: 0 }),
+          result.explanation || "",
+          new Date(result.createdAt || Date.now()),
+        ]
+      );
+    } catch (err) {
+      console.warn("[SimulationRepository] Failed to persist simulation run to DB:", err);
+    }
+  }
+
+  async findResilienceById(id: string): Promise<any | null> {
+    const pool = getPool();
+    const res = await pool.query(
+      `SELECT * FROM simulation_runs WHERE id = $1;`,
+      [id]
+    );
+    if (res.rows.length === 0) return null;
+    return this.mapRowToResilience(res.rows[0]);
+  }
+
+  async findResilienceByStation(stationId: string, limit = 20): Promise<any[]> {
+    const pool = getPool();
+    const res = await pool.query(
+      `SELECT * FROM simulation_runs WHERE station_id = $1 ORDER BY created_at DESC LIMIT $2;`,
+      [stationId, limit]
+    );
+    return res.rows.map((row) => this.mapRowToResilience(row));
+  }
+
+  async findAllResilience(limit = 50): Promise<any[]> {
+    const pool = getPool();
+    const res = await pool.query(
+      `SELECT * FROM simulation_runs ORDER BY created_at DESC LIMIT $1;`,
+      [limit]
+    );
+    return res.rows.map((row) => this.mapRowToResilience(row));
+  }
+
+  private mapRowToResilience(row: any): any {
+    const parse = (val: any, def: any) => {
+      if (!val) return def;
+      return typeof val === "string" ? JSON.parse(val) : val;
+    };
+    return {
+      simulationId: row.id,
+      stationId: row.station_id,
+      scenarioType: row.scenario_type,
+      title: row.title || row.scenario_type,
+      label: row.label || "SIMULATION",
+      modelVersion: row.model_version || "2.1.0-polar",
+      deterministicSeed: row.deterministic_seed || "42",
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+      snapshotTimestamp: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+      parameters: parse(row.parameters, {}),
+      baselineSnapshot: parse(row.input_state, {}),
+      scenarioState: parse(row.output_state, {}),
+      explanation: row.explanation || "",
+      impactedAssets: parse(row.impacts, []),
+      blastRadius: parse(row.blast_radius, { nodes: [], links: [] }),
+      comparisons: parse(row.comparisons, []),
+      operationalRisk: parse(row.operational_risk, { score: 0, level: "LOW", factors: [] }),
+      recoveryState: parse(row.recovery_state, { suggestedActions: [], estimatedRecoveryMinutes: 0 }),
+    };
+  }
 }

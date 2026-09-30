@@ -18,7 +18,9 @@ import {
   createTwinRouter,
   createIntelligenceRouter,
   createCopilotRouter,
+  createAuthRouter,
 } from "./routes";
+import { authenticate } from "./auth/auth.middleware";
 
 const startTime = Date.now();
 
@@ -26,8 +28,9 @@ export function createApp(): express.Application {
   const app = express();
 
   // ── Middleware ──────────────────────────────────────────────────
-  app.use(cors());
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
+  app.use(authenticate);
 
   // ── Root landing page (Command Center portal & API Directory) ──────
   app.get("/", (_req, res) => {
@@ -227,6 +230,7 @@ export function createApp(): express.Application {
   app.use("/api", createAlertsRouter());
   app.use("/api/simulations", createSimulationsRouter());
   app.use("/api/copilot", createCopilotRouter());
+  app.use("/api/auth", createAuthRouter());
 
   return app;
 }

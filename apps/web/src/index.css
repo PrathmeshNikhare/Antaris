@@ -1833,3 +1833,42 @@ body {
   font-weight: 600;
   color: var(--text-muted);
 }
+
+/* ── Print Stylesheet for Official Reports ──────────────────────── */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+  }
+
+  .sidebar,
+  .top-navbar,
+  .no-print,
+  .button,
+  .btn,
+  .page-header {
+    display: none !important;
+  }
+
+  .app-layout {
+    display: block !important;
+  }
+
+  .app-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .printable-report-container {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+}

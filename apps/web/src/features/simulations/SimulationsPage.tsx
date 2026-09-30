@@ -9,7 +9,61 @@ import type {
   BlastRadiusNode,
   BlastRadiusEdge,
   ImpactedAssetSummary,
+  MultiHazardSimulationResult,
+  MultiHazardCondition,
+  MultiHazardComposerInput,
 } from "@maitri-bharati/shared";
+
+interface MultiHazardPresetDef {
+  key: string;
+  title: string;
+  category: string;
+  description: string;
+  conditions: MultiHazardCondition[];
+}
+
+export const MULTI_HAZARD_PRESETS: MultiHazardPresetDef[] = [
+  {
+    key: "dual_gen_cold",
+    title: "Generator Failure + Polar Chill Vortex (-45°C)",
+    category: "ENERGY & THERMAL",
+    description: "Alternator trip drives emergency battery deep-discharge while extreme cold accelerates envelope heat dissipation.",
+    conditions: [
+      { scenarioType: "GENERATOR_FAILURE", severity: "CRITICAL", parameters: { durationHours: 3 } },
+      { scenarioType: "EXTREME_COLD", severity: "CRITICAL", parameters: { ambientTempC: -45 } },
+    ],
+  },
+  {
+    key: "gen_comms",
+    title: "Generator Failure + Satellite Comms Outage",
+    category: "OPERATIONS & COMMS",
+    description: "Concurrent electrical blackout and satellite disconnect, forcing autonomous edge black-start and SSD buffering.",
+    conditions: [
+      { scenarioType: "GENERATOR_FAILURE", severity: "CRITICAL", parameters: { durationHours: 2 } },
+      { scenarioType: "COMMUNICATION_OUTAGE", severity: "CRITICAL", parameters: {} },
+    ],
+  },
+  {
+    key: "fuel_cold",
+    title: "Fuel Storage Loss + Polar Chill Vortex",
+    category: "LOGISTICS & SURVIVAL",
+    description: "Diesel tank breach severely curtailing fuel runway while severe freeze increases heating fuel burn rate by 80%.",
+    conditions: [
+      { scenarioType: "FUEL_SHORTAGE", severity: "CRITICAL", parameters: { fuelLossLiters: 65000 } },
+      { scenarioType: "EXTREME_COLD", severity: "CRITICAL", parameters: { ambientTempC: -42 } },
+    ],
+  },
+  {
+    key: "wind_battery",
+    title: "Category 5 Blizzard (>48 m/s) + Battery Degradation",
+    category: "ENVIRONMENT & STORAGE",
+    description: "Wind turbines locked down with mechanical storm brakes while lithium battery internal resistance surges under sub-zero chill.",
+    conditions: [
+      { scenarioType: "HIGH_WIND", severity: "CRITICAL", parameters: { windSpeedMs: 52 } },
+      { scenarioType: "BATTERY_DEGRADATION", severity: "CRITICAL", parameters: { batteryDegradationPct: 65 } },
+    ],
+  },
+];
 
 interface ScenarioDefinition {
   type: ResilienceScenarioType;
@@ -81,12 +135,34 @@ const SUPPORTED_SCENARIOS: ScenarioDefinition[] = [
 export function SimulationsPage(): React.JSX.Element {
   const { stationId, simulationStatus, triggerAnomaly, changeConnectivity } = useStation();
 
-  const [activeTab, setActiveTab] = useState<"resilience" | "sandbox">("resilience");
+  const [activeTab, setActiveTab] = useState<"resilience" | "multi-hazard" | "sandbox">("resilience");
   const [selectedScenario, setSelectedScenario] = useState<ResilienceScenarioType>("GENERATOR_FAILURE");
   const [currentResult, setCurrentResult] = useState<ResilienceSimulationResult | null>(null);
   const [history, setHistory] = useState<ResilienceSimulationResult[]>([]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Multi-Hazard state
+  const [multiHazardResult, setMultiHazardResult] = useState<MultiHazardSimulationResult | null>(null);
+  const [isMultiHazardRunning, setIsMultiHazardRunning] = useState<boolean>(false);
+  const [multiHazardError, setMultiHazardError] = useState<string | null>(null);
+  const [selectedPresetKey, setSelectedPresetKey] = useState<string>("dual_gen_cold");
+  const [customMultiConditions, setCustomMultiConditions] = useState<{
+    genTrip: boolean;
+    extremeCold: boolean;
+    commsOutage: boolean;
+    fuelLoss: boolean;
+    highWind: boolean;
+    batteryDegradation: boolean;
+  }>({
+    genTrip: true,
+    extremeCold: true,
+    commsOutage: false,
+    fuelLoss: false,
+    highWind: false,
+    batteryDegradation: false,
+  });
+  const [multiDurationHours, setMultiDurationHours] = useState<number>(3.0);
 
   // Scenario specific parameters
   const [durationHours, setDurationHours] = useState<number>(2.0);
@@ -99,6 +175,84 @@ export function SimulationsPage(): React.JSX.Element {
 
   const isInitialMount = React.useRef(true);
   const lastRunKeyRef = React.useRef<string>("");
+
+  async function handleRunMultiHazard(presetKey?: string) {
+    try {
+      setIsMultiHazardRunning(true);
+      setMultiHazardError(null);
+      let conditionsToRun: MultiHazardCondition[] = [];
+      let titleToRun = "Custom Multi-Hazard Scenario";
+
+      const key = presetKey || selectedPresetKey;
+      const preset = MULTI_HAZARD_PRESETS.find((p) => p.key === key);
+      if (preset && key !== "custom") {
+        conditionsToRun = preset.conditions;
+        titleToRun = preset.title;
+      } else {
+        if (customMultiConditions.genTrip) {
+          conditionsToRun.push({
+            scenarioType: "GENERATOR_FAILURE",
+            severity: "CRITICAL",
+            parameters: { durationHours: multiDurationHours },
+          });
+        }
+        if (customMultiConditions.extremeCold) {
+          conditionsToRun.push({
+            scenarioType: "EXTREME_COLD",
+            severity: "CRITICAL",
+            parameters: { ambientTempC: -45 },
+          });
+        }
+        if (customMultiConditions.commsOutage) {
+          conditionsToRun.push({
+            scenarioType: "COMMUNICATION_OUTAGE",
+            severity: "CRITICAL",
+            parameters: {},
+          });
+        }
+        if (customMultiConditions.fuelLoss) {
+          conditionsToRun.push({
+            scenarioType: "FUEL_SHORTAGE",
+            severity: "CRITICAL",
+            parameters: { fuelLossLiters: 50000 },
+          });
+        }
+        if (customMultiConditions.highWind) {
+          conditionsToRun.push({
+            scenarioType: "HIGH_WIND",
+            severity: "CRITICAL",
+            parameters: { windSpeedMs: 48 },
+          });
+        }
+        if (customMultiConditions.batteryDegradation) {
+          conditionsToRun.push({
+            scenarioType: "BATTERY_DEGRADATION",
+            severity: "CRITICAL",
+            parameters: { batteryDegradationPct: 50 },
+          });
+        }
+      }
+
+      if (conditionsToRun.length < 2) {
+        throw new Error("Please select at least two concurrent hazard conditions for compound simulation");
+      }
+
+      const input: MultiHazardComposerInput = {
+        stationId,
+        title: titleToRun,
+        conditions: conditionsToRun,
+        durationHours: multiDurationHours,
+        deterministicSeed: 42,
+      };
+
+      const result = await twinApi.runMultiHazardSimulation(input);
+      setMultiHazardResult(result);
+    } catch (err: any) {
+      setMultiHazardError(err.message || "Multi-hazard simulation failed");
+    } finally {
+      setIsMultiHazardRunning(false);
+    }
+  }
 
   async function handleRunSimulation(
     scenarioToRun = selectedScenario,
@@ -188,7 +342,7 @@ export function SimulationsPage(): React.JSX.Element {
             id: "station-bus",
             label: `${isMaitri ? "Maitri" : "Bharati"} Microgrid Bus`,
             domain: "ENERGY",
-            severity: "OPERATIONAL",
+            severity: "NORMAL",
             status: "OPERATIONAL",
             impactDescription: "Active generation matches station load in full equilibrium",
             metricValue: "Balanced",
@@ -197,7 +351,7 @@ export function SimulationsPage(): React.JSX.Element {
             id: "station-life-support",
             label: "Life-Support Systems",
             domain: "LIFE_SUPPORT",
-            severity: "OPERATIONAL",
+            severity: "NORMAL",
             status: "OPERATIONAL",
             impactDescription: "Living quarters heating and water supply nominal",
             metricValue: "Nominal",
@@ -220,7 +374,7 @@ export function SimulationsPage(): React.JSX.Element {
           scenario: "12 (LOW)",
           absoluteChange: "0 pts",
           percentageChange: "0%",
-          severity: "OPERATIONAL",
+          severity: "NEUTRAL",
           reason: "Telemetry metrics operating inside nominal green envelopes",
         },
         {
@@ -230,7 +384,7 @@ export function SimulationsPage(): React.JSX.Element {
           scenario: "+18.0 kW",
           absoluteChange: "0 kW",
           percentageChange: "0%",
-          severity: "OPERATIONAL",
+          severity: "NEUTRAL",
           reason: "Sufficient spinning reserve across primary generators",
         },
         {
@@ -240,7 +394,7 @@ export function SimulationsPage(): React.JSX.Element {
           scenario: "92%",
           absoluteChange: "0%",
           percentageChange: "0%",
-          severity: "OPERATIONAL",
+          severity: "NEUTRAL",
           reason: "Emergency energy buffer fully charged for peak shaving",
         },
         {
@@ -250,7 +404,7 @@ export function SimulationsPage(): React.JSX.Element {
           scenario: "OPERATIONAL",
           absoluteChange: "NOMINAL",
           percentageChange: "0%",
-          severity: "OPERATIONAL",
+          severity: "NEUTRAL",
           reason: "Pipe trace heaters and submersible pumps energized",
         },
       ],
@@ -376,6 +530,18 @@ export function SimulationsPage(): React.JSX.Element {
             id="tab-resilience-engine"
           >
             ⚡ What-If Resilience Engine
+          </button>
+          <button
+            className={`btn ${activeTab === "multi-hazard" ? "btn--primary" : "btn--outline"}`}
+            onClick={() => {
+              setActiveTab("multi-hazard");
+              if (!multiHazardResult) {
+                handleRunMultiHazard("dual_gen_cold");
+              }
+            }}
+            id="tab-multi-hazard"
+          >
+            🌪 Multi-Hazard Composer
           </button>
           <button
             className={`btn ${activeTab === "sandbox" ? "btn--primary" : "btn--outline"}`}
@@ -1043,7 +1209,338 @@ export function SimulationsPage(): React.JSX.Element {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* TAB 2: COMMS & TELEMETRY SANDBOX (PHASE 2)                         */}
+      {/* TAB 2: MULTI-HAZARD SCENARIO COMPOSER (SECTION 15)                  */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {activeTab === "multi-hazard" && (
+        <div>
+          {/* Explicit SIMULATION Non-Measured Banner */}
+          <div className="sim-banner">
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span className="sim-banner__tag">
+                <span>⚠</span> SIMULATED / COMPOUND HAZARDS
+              </span>
+              <div style={{ fontSize: "0.82rem", color: "var(--text)" }}>
+                <strong>MULTI-HAZARD RESILIENCE COMPOSER:</strong> Simultaneously models cross-domain cascade interactions, non-linear compound degradation multipliers, and first- vs second-order failure propagation on an isolated Digital Twin clone.
+              </div>
+            </div>
+            {multiHazardResult && (
+              <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
+                ID: {multiHazardResult.simulationId}
+              </span>
+            )}
+          </div>
+
+          {multiHazardError && (
+            <div
+              style={{
+                backgroundColor: "var(--critical-soft)",
+                color: "var(--critical)",
+                padding: "0.75rem 1rem",
+                borderRadius: "var(--radius-md)",
+                marginBottom: "1rem",
+                fontSize: "0.85rem",
+              }}
+            >
+              ⚠ {multiHazardError}
+            </div>
+          )}
+
+          {/* Preset Selection Grid */}
+          <div className="card" style={{ marginBottom: "1.25rem" }}>
+            <div className="card-header">
+              <h2 className="card-title">🌪 Pre-Configured Multi-Hazard Scenarios</h2>
+              <span className="card-subtitle">Validated multi-condition Antarctic stress tests</span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "0.75rem", marginTop: "0.75rem" }}>
+              {MULTI_HAZARD_PRESETS.map((preset) => {
+                const isSelected = selectedPresetKey === preset.key;
+                return (
+                  <div
+                    key={preset.key}
+                    style={{
+                      border: isSelected ? "2px solid var(--green)" : "1px solid var(--border)",
+                      backgroundColor: isSelected ? "var(--green-soft)" : "var(--card-bg)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "0.85rem",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: "0.5rem",
+                      transition: "all 0.15s ease",
+                    }}
+                    onClick={() => {
+                      setSelectedPresetKey(preset.key);
+                      handleRunMultiHazard(preset.key);
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                        <span className="badge badge--warning" style={{ fontSize: "0.65rem" }}>
+                          {preset.category}
+                        </span>
+                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                          {preset.conditions.length} CONCURRENT
+                        </span>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text)", marginBottom: "0.3rem" }}>
+                        {preset.title}
+                      </div>
+                      <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.35 }}>
+                        {preset.description}
+                      </p>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
+                      <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                        {preset.conditions.map((c) => c.scenarioType.replace("_", " ")).join(" + ")}
+                      </span>
+                      <button
+                        type="button"
+                        className={`btn ${isSelected ? "btn--primary" : "btn--outline"}`}
+                        style={{ padding: "0.2rem 0.6rem", fontSize: "0.72rem" }}
+                        disabled={isMultiHazardRunning}
+                      >
+                        {isSelected && isMultiHazardRunning ? "Simulating…" : "Run Compound"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Custom Hazard Condition Composer */}
+          <div className="card" style={{ marginBottom: "1.25rem" }}>
+            <div className="card-header">
+              <h2 className="card-title">⚙ Custom Multi-Condition Composer</h2>
+              <span className="card-subtitle">Synthesize custom concurrent stressors</span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginTop: "0.75rem" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={customMultiConditions.genTrip}
+                  onChange={(e) => {
+                    setSelectedPresetKey("custom");
+                    setCustomMultiConditions({ ...customMultiConditions, genTrip: e.target.checked });
+                  }}
+                />
+                ⚡ Primary Generator Trip
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={customMultiConditions.extremeCold}
+                  onChange={(e) => {
+                    setSelectedPresetKey("custom");
+                    setCustomMultiConditions({ ...customMultiConditions, extremeCold: e.target.checked });
+                  }}
+                />
+                ❄ Polar Chill Vortex (-45°C)
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={customMultiConditions.commsOutage}
+                  onChange={(e) => {
+                    setSelectedPresetKey("custom");
+                    setCustomMultiConditions({ ...customMultiConditions, commsOutage: e.target.checked });
+                  }}
+                />
+                📡 Satellite Blackout
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={customMultiConditions.fuelLoss}
+                  onChange={(e) => {
+                    setSelectedPresetKey("custom");
+                    setCustomMultiConditions({ ...customMultiConditions, fuelLoss: e.target.checked });
+                  }}
+                />
+                🛢 Bulk Fuel Tank Breach
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={customMultiConditions.highWind}
+                  onChange={(e) => {
+                    setSelectedPresetKey("custom");
+                    setCustomMultiConditions({ ...customMultiConditions, highWind: e.target.checked });
+                  }}
+                />
+                🌪 Blizzard Gale (&gt;48 m/s)
+              </label>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={customMultiConditions.batteryDegradation}
+                  onChange={(e) => {
+                    setSelectedPresetKey("custom");
+                    setCustomMultiConditions({ ...customMultiConditions, batteryDegradation: e.target.checked });
+                  }}
+                />
+                🔋 Battery Sub-Zero Degradation
+              </label>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)" }}>
+                  Stress Duration:
+                </label>
+                <input
+                  type="number"
+                  min="0.5"
+                  max="12"
+                  step="0.5"
+                  value={multiDurationHours}
+                  onChange={(e) => setMultiDurationHours(parseFloat(e.target.value) || 2.0)}
+                  style={{ width: "70px", padding: "0.25rem 0.4rem", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", fontSize: "0.8rem" }}
+                />
+                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>hours</span>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => handleRunMultiHazard("custom")}
+                disabled={isMultiHazardRunning}
+                id="btn-run-custom-multihazard"
+              >
+                {isMultiHazardRunning ? "Simulating Compound Cascades…" : "▶ Execute Custom Compound Simulation"}
+              </button>
+            </div>
+          </div>
+
+          {/* Results Display */}
+          {multiHazardResult && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* Compound Interactions Card */}
+              <div className="card" style={{ borderLeft: "4px solid var(--critical)" }}>
+                <div className="card-header">
+                  <h2 className="card-title" style={{ color: "var(--critical)" }}>
+                    ⚡ Compound Multi-Hazard Interactions Detected ({multiHazardResult.compoundInteractions.length})
+                  </h2>
+                  <span className="card-subtitle">Synergistic stress amplifiers beyond single-fault models</span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "0.75rem" }}>
+                  {multiHazardResult.compoundInteractions.map((interaction, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        backgroundColor: "var(--critical-soft)",
+                        border: "1px solid rgba(197, 48, 48, 0.2)",
+                        borderRadius: "var(--radius-sm)",
+                        padding: "0.65rem 0.85rem",
+                        fontSize: "0.83rem",
+                        color: "var(--text)",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <span style={{ fontSize: "1rem" }}>⚠️</span>
+                      <span style={{ lineHeight: 1.4 }}>{interaction}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Classified First-Order vs Second-Order Effects */}
+              <div className="grid-2">
+                <div className="card">
+                  <div className="card-header">
+                    <h2 className="card-title">1️⃣ First-Order Direct Disruptions</h2>
+                    <span className="card-subtitle">Immediate component failure state shifts</span>
+                  </div>
+                  <ul style={{ paddingLeft: "1.25rem", margin: "0.75rem 0 0", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.82rem", color: "var(--text)" }}>
+                    {multiHazardResult.firstOrderEffects.map((effect, idx) => (
+                      <li key={idx} style={{ lineHeight: 1.4 }}>
+                        <strong>Direct:</strong> {effect}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="card">
+                  <div className="card-header">
+                    <h2 className="card-title">2️⃣ Second-Order Cascading Failures</h2>
+                    <span className="card-subtitle">Downstream dependencies and thermodynamic knock-on</span>
+                  </div>
+                  <ul style={{ paddingLeft: "1.25rem", margin: "0.75rem 0 0", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.82rem", color: "var(--text)" }}>
+                    {multiHazardResult.secondOrderEffects.map((effect, idx) => (
+                      <li key={idx} style={{ lineHeight: 1.4 }}>
+                        <strong>Cascade:</strong> {effect}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Assumption Inspector */}
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="card-title">🔬 Assumption Inspector & Physical Constants</h2>
+                  <span className="card-subtitle">Documented engineering bounds and thermodynamic constraints</span>
+                </div>
+                <div style={{ marginTop: "0.75rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "0.6rem" }}>
+                  {multiHazardResult.assumptions.map((assumption, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: "0.5rem 0.75rem",
+                        backgroundColor: "var(--bg-subtle)",
+                        borderRadius: "var(--radius-sm)",
+                        border: "1px solid var(--border)",
+                        fontSize: "0.78rem",
+                        color: "var(--text-muted)",
+                        fontFamily: "var(--font-mono)",
+                      }}
+                    >
+                      ✓ {assumption}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recovery Action Plan */}
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="card-title">🛠 Compound Recovery & Mitigation Protocol</h2>
+                  <span className="card-subtitle">Autonomous & operator procedures for concurrent disruption</span>
+                </div>
+                <div style={{ padding: "0.5rem 0" }}>
+                  <div style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span className="badge badge--warning" style={{ fontSize: "0.75rem" }}>
+                      ESTIMATED RECOVERY TIME: ~{multiHazardResult.recoveryState.estimatedRecoveryMinutes} MINUTES
+                    </span>
+                  </div>
+                  <ol style={{ paddingLeft: "1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem", fontSize: "0.82rem", color: "var(--text)" }}>
+                    {multiHazardResult.recoveryState.suggestedActions.map((action, idx) => (
+                      <li key={idx} style={{ lineHeight: 1.4 }}>
+                        {action}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* TAB 3: COMMS & TELEMETRY SANDBOX (PHASE 2)                         */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {activeTab === "sandbox" && (
         <div>

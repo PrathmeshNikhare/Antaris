@@ -173,5 +173,54 @@ export function createIntelligenceRouter(): Router {
     }
   });
 
+  // ── GET Antarctic Mission Resilience Index ──────────────────────
+  router.get("/:stationId/intelligence/resilience-index", async (req: Request, res: Response) => {
+    try {
+      const { stationId } = req.params;
+      const { getTwinRegistry } = await import("../twin");
+      const twinState = await getTwinRegistry().getTwinState(stationId);
+      if (!twinState) {
+        res.status(404).json({
+          success: false,
+          error: { code: "STATION_NOT_FOUND", message: `Twin state for ${stationId} not found` },
+        });
+        return;
+      }
+      const activeAnomalies = intelligenceService.anomalyService.getActiveAnomalies(stationId);
+      const { computeMissionResilienceIndex } = await import("../intelligence/resilience-index");
+      const index = computeMissionResilienceIndex(twinState, activeAnomalies.length);
+      res.json({
+        success: true,
+        data: index,
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        error: { code: "RESILIENCE_INDEX_FAILED", message: (err as Error).message },
+      });
+    }
+  });
+
+  // ── GET Decision Trace Records ──────────────────────────────────
+  router.get("/:stationId/intelligence/decision-trace", async (req: Request, res: Response) => {
+    try {
+      const { stationId } = req.params;
+      const limit = parseInt(String(req.query.limit ?? "50"), 10);
+      const { decisionTraceStore } = await import("../intelligence/decision-trace");
+      const traces = decisionTraceStore.getByStation(stationId, limit);
+      res.json({
+        success: true,
+        data: traces,
+        meta: { timestamp: new Date().toISOString(), total: traces.length },
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        error: { code: "DECISION_TRACE_QUERY_FAILED", message: (err as Error).message },
+      });
+    }
+  });
+
   return router;
 }
