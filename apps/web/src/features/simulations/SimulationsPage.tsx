@@ -97,6 +97,184 @@ export function SimulationsPage(): React.JSX.Element {
   const [fuelLossLiters, setFuelLossLiters] = useState<number>(65000);
   const [batteryDegradationPct, setBatteryDegradationPct] = useState<number>(60);
 
+  const isInitialMount = React.useRef(true);
+  const lastRunKeyRef = React.useRef<string>("");
+
+  async function handleRunSimulation(
+    scenarioToRun = selectedScenario,
+    overrides?: Partial<SimulationParameters>
+  ) {
+    try {
+      setIsRunning(true);
+      setError(null);
+
+      const params: Partial<SimulationParameters> = {
+        durationHours,
+        severity,
+        ambientTempC: scenarioToRun === "EXTREME_COLD" ? ambientTempC : undefined,
+        windSpeedMs: scenarioToRun === "HIGH_WIND" ? windSpeedMs : undefined,
+        loadReductionPct: scenarioToRun === "LOAD_REDUCTION" ? loadReductionPct : undefined,
+        fuelLossLiters: scenarioToRun === "FUEL_SHORTAGE" ? fuelLossLiters : undefined,
+        batteryDegradationPct: scenarioToRun === "BATTERY_DEGRADATION" ? batteryDegradationPct : undefined,
+        ...overrides,
+      };
+
+      const runKey = `${stationId}:${scenarioToRun}:${JSON.stringify(params)}`;
+      lastRunKeyRef.current = runKey;
+
+      const result = await twinApi.runResilienceSimulation(stationId, scenarioToRun, params);
+      setCurrentResult(result);
+      setHistory((prev) => [result, ...prev.filter((r) => r.simulationId !== result.simulationId)]);
+    } catch (err) {
+      setError((err as Error).message || "Simulation execution failed");
+    } finally {
+      setIsRunning(false);
+    }
+  }
+
+  async function handleResetToNominal() {
+    try {
+      // Also restore physical twin telemetry & simulator if anomalies were active
+      await triggerAnomaly("NORMAL");
+      await changeConnectivity("NORMAL");
+    } catch (err) {
+      console.error("Failed to restore normal telemetry:", err);
+    }
+
+    setDurationHours(2.0);
+    setSeverity("WARNING");
+    setAmbientTempC(-22.0);
+    setWindSpeedMs(14.0);
+    setLoadReductionPct(20);
+    setFuelLossLiters(25000);
+    setBatteryDegradationPct(20);
+
+    const resetKey = `${stationId}:${selectedScenario}:${JSON.stringify({
+      durationHours: 2.0,
+      severity: "WARNING",
+      ambientTempC: selectedScenario === "EXTREME_COLD" ? -22.0 : undefined,
+      windSpeedMs: selectedScenario === "HIGH_WIND" ? 14.0 : undefined,
+      loadReductionPct: selectedScenario === "LOAD_REDUCTION" ? 20 : undefined,
+      fuelLossLiters: selectedScenario === "FUEL_SHORTAGE" ? 25000 : undefined,
+      batteryDegradationPct: selectedScenario === "BATTERY_DEGRADATION" ? 20 : undefined,
+    })}`;
+    lastRunKeyRef.current = resetKey;
+
+    const nominalResult: ResilienceSimulationResult = {
+      simulationId: `sim-nominal-${Date.now()}`,
+      stationId,
+      scenarioType: "LOAD_REDUCTION",
+      title: "Nominal Baseline Operations (Normal)",
+      label: "SIMULATION",
+      modelVersion: "resilience-sim-v1.0.0",
+      deterministicSeed: "42",
+      createdAt: new Date().toISOString(),
+      snapshotTimestamp: new Date().toISOString(),
+      parameters: {
+        scenarioType: "LOAD_REDUCTION",
+        durationHours: 0,
+        severity: "WARNING",
+      },
+      baselineSnapshot: currentResult?.baselineSnapshot || ({} as any),
+      scenarioState: currentResult?.baselineSnapshot || ({} as any),
+      explanation:
+        `All primary systems at ${isMaitri ? "Maitri" : "Bharati"} Station are operating under nominal Antarctic parameters. ` +
+        `Generation, microgrid storage, HVAC envelope heating, and lake water intake are balanced with zero cascade vulnerabilities. ` +
+        `Counterfactual disruptions have been reset to nominal baseline.`,
+      impactedAssets: [],
+      blastRadius: {
+        nodes: [
+          {
+            id: "station-bus",
+            label: `${isMaitri ? "Maitri" : "Bharati"} Microgrid Bus`,
+            domain: "ENERGY",
+            severity: "OPERATIONAL",
+            status: "OPERATIONAL",
+            impactDescription: "Active generation matches station load in full equilibrium",
+            metricValue: "Balanced",
+          },
+          {
+            id: "station-life-support",
+            label: "Life-Support Systems",
+            domain: "LIFE_SUPPORT",
+            severity: "OPERATIONAL",
+            status: "OPERATIONAL",
+            impactDescription: "Living quarters heating and water supply nominal",
+            metricValue: "Nominal",
+          },
+        ],
+        links: [
+          {
+            source: "station-bus",
+            target: "station-life-support",
+            dependencyType: "POWER",
+            impactReason: "Continuous stable 3-phase power delivery",
+          },
+        ],
+      },
+      comparisons: [
+        {
+          metric: "Operational Risk Score",
+          unit: "/100",
+          baseline: "12 (LOW)",
+          scenario: "12 (LOW)",
+          absoluteChange: "0 pts",
+          percentageChange: "0%",
+          severity: "OPERATIONAL",
+          reason: "Telemetry metrics operating inside nominal green envelopes",
+        },
+        {
+          metric: "Generation Reserve Margin",
+          unit: "kW",
+          baseline: "+18.0 kW",
+          scenario: "+18.0 kW",
+          absoluteChange: "0 kW",
+          percentageChange: "0%",
+          severity: "OPERATIONAL",
+          reason: "Sufficient spinning reserve across primary generators",
+        },
+        {
+          metric: "Battery Bank Storage",
+          unit: "%",
+          baseline: "92%",
+          scenario: "92%",
+          absoluteChange: "0%",
+          percentageChange: "0%",
+          severity: "OPERATIONAL",
+          reason: "Emergency energy buffer fully charged for peak shaving",
+        },
+        {
+          metric: "Intake Water & Trace Heating",
+          unit: "Status",
+          baseline: "OPERATIONAL",
+          scenario: "OPERATIONAL",
+          absoluteChange: "NOMINAL",
+          percentageChange: "0%",
+          severity: "OPERATIONAL",
+          reason: "Pipe trace heaters and submersible pumps energized",
+        },
+      ],
+      operationalRisk: {
+        score: 12,
+        level: "LOW",
+        factors: [
+          "Primary power generation fully synchronized",
+          "Consumables and energy reserves exceed minimum polar safety thresholds",
+          "No active cascading failures or asset impairments",
+        ],
+      },
+      recoveryState: {
+        suggestedActions: [
+          "Station is in nominal operating state. Maintain standard operating procedures.",
+          "Continue routine preventive maintenance and polar weather observation.",
+        ],
+        estimatedRecoveryMinutes: 0,
+      },
+    };
+
+    setCurrentResult(nominalResult);
+  }
+
   // Load history on mount or when stationId changes
   useEffect(() => {
     let isMounted = true;
@@ -110,6 +288,11 @@ export function SimulationsPage(): React.JSX.Element {
 
         if (runs.length > 0) {
           setCurrentResult(runs[0]);
+          setSelectedScenario(runs[0].scenarioType);
+          if (runs[0].parameters) {
+            if (runs[0].parameters.durationHours) setDurationHours(runs[0].parameters.durationHours);
+            if (runs[0].parameters.severity) setSeverity(runs[0].parameters.severity as any);
+          }
         } else {
           // If no simulations yet run for this station, execute default scenario
           handleRunSimulation("GENERATOR_FAILURE");
@@ -127,30 +310,43 @@ export function SimulationsPage(): React.JSX.Element {
     };
   }, [stationId]);
 
-  async function handleRunSimulation(scenarioToRun = selectedScenario) {
-    try {
-      setIsRunning(true);
-      setError(null);
-
-      const params: Partial<SimulationParameters> = {
-        durationHours,
-        severity,
-        ambientTempC: scenarioToRun === "EXTREME_COLD" ? ambientTempC : undefined,
-        windSpeedMs: scenarioToRun === "HIGH_WIND" ? windSpeedMs : undefined,
-        loadReductionPct: scenarioToRun === "LOAD_REDUCTION" ? loadReductionPct : undefined,
-        fuelLossLiters: scenarioToRun === "FUEL_SHORTAGE" ? fuelLossLiters : undefined,
-        batteryDegradationPct: scenarioToRun === "BATTERY_DEGRADATION" ? batteryDegradationPct : undefined,
-      };
-
-      const result = await twinApi.runResilienceSimulation(stationId, scenarioToRun, params);
-      setCurrentResult(result);
-      setHistory((prev) => [result, ...prev.filter((r) => r.simulationId !== result.simulationId)]);
-    } catch (err) {
-      setError((err as Error).message || "Simulation execution failed");
-    } finally {
-      setIsRunning(false);
+  // Debounced auto-execution when any parameter changes so sliders are reactive in real time
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }
+
+    const currentKey = `${stationId}:${selectedScenario}:${JSON.stringify({
+      durationHours,
+      severity,
+      ambientTempC: selectedScenario === "EXTREME_COLD" ? ambientTempC : undefined,
+      windSpeedMs: selectedScenario === "HIGH_WIND" ? windSpeedMs : undefined,
+      loadReductionPct: selectedScenario === "LOAD_REDUCTION" ? loadReductionPct : undefined,
+      fuelLossLiters: selectedScenario === "FUEL_SHORTAGE" ? fuelLossLiters : undefined,
+      batteryDegradationPct: selectedScenario === "BATTERY_DEGRADATION" ? batteryDegradationPct : undefined,
+    })}`;
+
+    if (currentKey === lastRunKeyRef.current) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleRunSimulation(selectedScenario);
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [
+    stationId,
+    selectedScenario,
+    durationHours,
+    severity,
+    ambientTempC,
+    windSpeedMs,
+    loadReductionPct,
+    fuelLossLiters,
+    batteryDegradationPct,
+  ]);
 
   const connectivity = simulationStatus?.connectivity ?? "NORMAL";
   const queueSize = simulationStatus?.queueSize ?? 0;
@@ -207,9 +403,27 @@ export function SimulationsPage(): React.JSX.Element {
               </div>
             </div>
             {currentResult && (
-              <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
-                ID: {currentResult.simulationId}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
+                  ID: {currentResult.simulationId}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--outline"
+                  style={{
+                    padding: "0.2rem 0.6rem",
+                    fontSize: "0.72rem",
+                    borderColor: "var(--green)",
+                    color: "var(--green)",
+                    fontWeight: 600,
+                  }}
+                  onClick={handleResetToNominal}
+                  id="btn-banner-reset-normal"
+                  title="Clear counterfactual cascade and return station view to healthy normal baseline"
+                >
+                  ↺ Make Normal Again
+                </button>
+              </div>
             )}
           </div>
 
@@ -247,7 +461,10 @@ export function SimulationsPage(): React.JSX.Element {
                     key={sc.type}
                     type="button"
                     className={`sim-scenario-card ${isSelected ? "sim-scenario-card--active" : ""}`}
-                    onClick={() => setSelectedScenario(sc.type)}
+                    onClick={() => {
+                      setSelectedScenario(sc.type);
+                      handleRunSimulation(sc.type);
+                    }}
                   >
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -395,16 +612,60 @@ export function SimulationsPage(): React.JSX.Element {
                 )}
               </div>
 
-              {/* Execution Action Button */}
-              <button
-                className="btn btn--primary"
-                style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem" }}
-                onClick={() => handleRunSimulation()}
-                disabled={isRunning}
-                id="btn-run-simulation"
-              >
-                {isRunning ? "⏳ Computing Cascade..." : "▶ Run Counterfactual Simulation"}
-              </button>
+              {/* Execution Action Button & Live Reactive Status */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    fontSize: "0.75rem",
+                    color: isRunning ? "var(--accent)" : "var(--green)",
+                    fontWeight: 600,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor: isRunning ? "var(--accent)" : "var(--green)",
+                      display: "inline-block",
+                    }}
+                  />
+                  {isRunning ? "Live Computing..." : "Real-Time Reactive"}
+                </span>
+
+                <button
+                  type="button"
+                  className="btn btn--outline"
+                  style={{
+                    padding: "0.6rem 1.1rem",
+                    fontSize: "0.85rem",
+                    borderColor: "var(--green)",
+                    color: "var(--green)",
+                    fontWeight: 600,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                  }}
+                  onClick={handleResetToNominal}
+                  id="btn-reset-nominal"
+                  title="Reset all parameters and return to healthy nominal station baseline"
+                >
+                  ↺ Make Normal Again
+                </button>
+
+                <button
+                  className="btn btn--primary"
+                  style={{ padding: "0.6rem 1.4rem", fontSize: "0.88rem" }}
+                  onClick={() => handleRunSimulation()}
+                  disabled={isRunning}
+                  id="btn-run-simulation"
+                >
+                  {isRunning ? "⏳ Computing Cascade..." : "▶ Run Counterfactual Simulation"}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -412,7 +673,7 @@ export function SimulationsPage(): React.JSX.Element {
           {currentResult && (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               {/* Executive Impact Cards */}
-              <div className="grid-4">
+              <div className="grid-4" style={{ opacity: isRunning ? 0.75 : 1, transition: "opacity 0.15s ease" }}>
                 <div className="kpi-tile">
                   <div className="kpi-tile__label">Operational Risk Score</div>
                   <div className="kpi-tile__value" style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
@@ -759,7 +1020,14 @@ export function SimulationsPage(): React.JSX.Element {
                             type="button"
                             className={`btn ${isCurrent ? "btn--primary" : "btn--outline"}`}
                             style={{ padding: "0.25rem 0.6rem", fontSize: "0.75rem" }}
-                            onClick={() => setCurrentResult(run)}
+                            onClick={() => {
+                              setCurrentResult(run);
+                              setSelectedScenario(run.scenarioType);
+                              if (run.parameters) {
+                                if (run.parameters.durationHours) setDurationHours(run.parameters.durationHours);
+                                if (run.parameters.severity) setSeverity(run.parameters.severity as any);
+                              }
+                            }}
                           >
                             {isCurrent ? "Viewing" : "Load Run"}
                           </button>
@@ -864,6 +1132,28 @@ export function SimulationsPage(): React.JSX.Element {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
+                <button
+                  className="btn btn--primary"
+                  onClick={async () => {
+                    await triggerAnomaly("NORMAL");
+                    await changeConnectivity("NORMAL");
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    backgroundColor: "var(--green)",
+                    borderColor: "var(--green)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    padding: "0.65rem 1rem",
+                  }}
+                  id="btn-restore-normal-sandbox"
+                >
+                  ✓ Make Normal Again (Clear All Anomalies & Restore 100% Comms)
+                </button>
+
                 <button
                   className="btn btn--outline"
                   onClick={() => triggerAnomaly("COOLANT_SPIKE")}

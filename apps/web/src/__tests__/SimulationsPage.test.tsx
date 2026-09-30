@@ -274,7 +274,25 @@ describe("Phase 6: SimulationsPage Web Feature", () => {
     });
   });
 
-  it("switches to Phase 2 Comms & Telemetry Sandbox tab smoothly", async () => {
+  it("resets counterfactual to nominal baseline when Make Normal Again button is clicked", async () => {
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Make Normal Again/i).length).toBeGreaterThan(0);
+    });
+
+    const resetButtons = screen.getAllByRole("button", { name: /Make Normal Again/i });
+    fireEvent.click(resetButtons[0]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/All primary systems at Maitri Station are operating under nominal Antarctic parameters/i)
+      ).toBeInTheDocument();
+      expect(screen.getByText("12")).toBeInTheDocument();
+    });
+  });
+
+  it("switches to Phase 2 Comms & Telemetry Sandbox tab and restores nominal conditions", async () => {
     renderComponent();
 
     const sandboxTab = screen.getByText(/📡 Comms & Anomaly Sandbox/i);
@@ -283,5 +301,14 @@ describe("Phase 6: SimulationsPage Web Feature", () => {
     expect(screen.getByText(/Satellite Link Connectivity Simulation/i)).toBeInTheDocument();
     expect(screen.getByText(/Synthetic Anomaly Preset Injections/i)).toBeInTheDocument();
     expect(screen.getByText(/Edge SSD Store-and-Forward Buffer/i)).toBeInTheDocument();
+
+    const restoreBtn = screen.getByRole("button", { name: /Make Normal Again/i });
+    expect(restoreBtn).toBeInTheDocument();
+    fireEvent.click(restoreBtn);
+
+    await waitFor(() => {
+      expect(twinApi.triggerAnomalyPreset).toHaveBeenCalledWith("NORMAL", "station-maitri");
+      expect(twinApi.setConnectivity).toHaveBeenCalledWith("NORMAL");
+    });
   });
 });

@@ -156,7 +156,8 @@ export class ResilienceSimulationEngine {
         scenarioState.energy.gridStatus = simulatedReserveKw < 0 ? "DEFICIT" : "BALANCED";
 
         // Operational risk
-        riskScore = 95;
+        const hoursFactor = Math.min(20, Math.round(durationHours * 3.5));
+        riskScore = Math.min(99, 78 + hoursFactor);
         riskLevel = "CRITICAL";
         riskFactors.push(
           "Catastrophic primary generator loss induces immediate 125 kW generation deficit",
@@ -315,27 +316,32 @@ export class ResilienceSimulationEngine {
           "Execute emergency load shedding on non-essential science and auxiliary laboratory equipment (-25 kW).",
           "Prioritize electric trace heaters on Priyadarshini water pipeline before ice formation begins."
         );
-        recoveryMinutes = 15;
+        recoveryMinutes = Math.min(240, Math.round(15 + durationHours * 10));
         break;
       }
 
       case "BATTERY_DEGRADATION": {
         title = "Sub-Zero Battery Cell Degradation & Headroom Loss";
-        const degPct = params.batteryDegradationPct ?? 65;
-        const targetBat = scenarioState.assets.find((a) => a.type === "BATTERY");
+        const degPct = params.batteryDegradationPct ?? 60;
+        const durationHours = params.durationHours ?? 2.0;
+        const targetBat = scenarioState.assets.find(
+          (a) => a.type === "BATTERY" || a.assetId.includes("bat")
+        );
+
+        const simHealth = Math.max(8, Math.round(92 * (1 - (degPct / 100) * 0.88)));
 
         if (targetBat) {
-          targetBat.status = "DEGRADED";
-          targetBat.healthScore = 32;
+          targetBat.status = degPct >= 60 ? "CRITICAL" : "DEGRADED";
+          targetBat.healthScore = simHealth;
           impactedAssets.push({
             assetId: targetBat.assetId,
             assetName: targetBat.name,
             assetType: targetBat.type,
             baselineStatus: "OPERATIONAL",
-            simulatedStatus: "DEGRADED",
+            simulatedStatus: targetBat.status,
             baselineHealth: 90,
-            simulatedHealth: 32,
-            failureCause: `Severe sub-zero lithium plating; ${degPct}% usable capacity derated`,
+            simulatedHealth: simHealth,
+            failureCause: `Severe sub-zero lithium plating; ${degPct}% usable capacity derated over ${durationHours}h`,
             criticality: targetBat.criticality,
           });
         }
@@ -344,47 +350,72 @@ export class ResilienceSimulationEngine {
         const simKwh = Math.round(baseKwh * (1 - degPct / 100));
         scenarioState.energy.batteryStorageKwh = simKwh;
 
-        riskScore = 72;
-        riskLevel = "HIGH";
+        const loadKw = Math.max(15, baselineSnapshot.energy.totalLoadKw);
+        const baseBufferHours = Number((baseKwh / loadKw).toFixed(1));
+        const simBufferHours = Number((simKwh / loadKw).toFixed(1));
+
+        // If duration exceeds simulated buffer, life-support heating also suffers
+        if (durationHours > simBufferHours) {
+          const hvac = scenarioState.assets.find((a) => a.type === "HVAC");
+          if (hvac) {
+            hvac.status = "WARNING";
+            hvac.healthScore = Math.max(35, hvac.healthScore - 25);
+            impactedAssets.push({
+              assetId: hvac.assetId,
+              assetName: hvac.name,
+              assetType: hvac.type,
+              baselineStatus: "OPERATIONAL",
+              simulatedStatus: "WARNING",
+              baselineHealth: 87,
+              simulatedHealth: hvac.healthScore,
+              failureCause: `Battery buffer exhausted after ${simBufferHours}h during ${durationHours}h test; non-essential thermal trim`,
+              criticality: hvac.criticality,
+            });
+          }
+        }
+
+        riskScore = Math.min(98, Math.max(30, Math.round(30 + degPct * 0.65 + durationHours * 2.2)));
+        riskLevel = riskScore >= 75 ? "CRITICAL" : riskScore >= 50 ? "HIGH" : "MEDIUM";
         riskFactors.push(
           `Battery bank storage capacity degraded by ${degPct}% (remaining: ${simKwh} kWh)`,
-          "Dynamic grid buffering and peak shaving lost; high vulnerability to load surges"
+          `Dynamic grid buffer window reduced from ${baseBufferHours}h to ${simBufferHours}h under ${durationHours}h exposure`,
+          "High microgrid vulnerability to motor inductive startup surges"
         );
 
         explanation =
-          `Sub-zero electrolyte crystallization degrades central battery storage capacity by ${degPct}%, ` +
-          `shrinking available energy buffer from ${baseKwh} kWh to ${simKwh} kWh. Maximum safe discharge current is ` +
-          `severely throttled to prevent cell reversal, eliminating station peak-shaving resilience.`;
+          `Sub-zero electrolyte crystallization derates central battery capacity by ${degPct}% over ${durationHours} hours, ` +
+          `shrinking available energy buffer from ${baseKwh} kWh (${baseBufferHours}h autonomy) to ${simKwh} kWh (${simBufferHours}h autonomy). ` +
+          `Maximum safe discharge current is throttled to prevent cell reversal, severely curtailing station peak-shaving resilience.`;
 
         comparisons.push(
           {
             metric: "Usable Battery Storage Capacity",
             unit: "kWh",
-            baseline: baseKwh,
-            scenario: simKwh,
+            baseline: `${baseKwh} kWh`,
+            scenario: `${simKwh} kWh`,
             absoluteChange: `-${baseKwh - simKwh} kWh`,
             percentageChange: `-${degPct}%`,
-            severity: "CRITICAL",
-            reason: "Internal impedance spike and electrolyte plating",
+            severity: degPct >= 50 ? "CRITICAL" : "WARNING",
+            reason: "Sub-zero internal impedance spike and electrolyte plating",
           },
           {
             metric: "Emergency Grid Buffer Duration",
             unit: "Hours",
-            baseline: "3.2 h",
-            scenario: "1.1 h",
-            absoluteChange: "-2.1 h",
-            percentageChange: "-65%",
-            severity: "CRITICAL",
+            baseline: `${baseBufferHours} h`,
+            scenario: `${simBufferHours} h`,
+            absoluteChange: `-${(baseBufferHours - simBufferHours).toFixed(1)} h`,
+            percentageChange: `-${Math.round(((baseBufferHours - simBufferHours) / baseBufferHours) * 100)}%`,
+            severity: simBufferHours < 1.5 ? "CRITICAL" : "WARNING",
             reason: "Reduced kWh reserve severely shortens generator failover window",
           },
           {
             metric: "Peak Shaving Resilience",
             unit: "Capability",
             baseline: "NOMINAL",
-            scenario: "UNAVAILABLE",
-            absoluteChange: "OFFLINE",
+            scenario: degPct >= 50 ? "UNAVAILABLE" : "DEGRADED",
+            absoluteChange: degPct >= 50 ? "OFFLINE" : "-40% Headroom",
             percentageChange: "N/A",
-            severity: "WARNING",
+            severity: degPct >= 50 ? "CRITICAL" : "WARNING",
             reason: "Current throttling prevents absorbing inductive motor startup spikes",
           }
         );
@@ -394,9 +425,9 @@ export class ResilienceSimulationEngine {
             id: targetBat?.assetId ?? "bat-1",
             label: "Central Battery Bank",
             domain: "ENERGY",
-            severity: "CRITICAL",
-            status: "DEGRADED",
-            impactDescription: `Usable capacity throttled by ${degPct}%`,
+            severity: degPct >= 50 ? "CRITICAL" : "WARNING",
+            status: degPct >= 60 ? "CRITICAL" : "DEGRADED",
+            impactDescription: `Usable capacity throttled by ${degPct}% (${simKwh} kWh)`,
             metricValue: `${simKwh} kWh`,
           },
           {
@@ -406,7 +437,7 @@ export class ResilienceSimulationEngine {
             severity: "WARNING",
             status: "VOLATILE",
             impactDescription: "Grid harmonics and inductive startup vulnerability",
-            metricValue: "THD +8%",
+            metricValue: `Buffer: ${simBufferHours}h`,
           }
         );
 
@@ -419,42 +450,62 @@ export class ResilienceSimulationEngine {
 
         recoveryActions.push(
           "Activate auxiliary battery thermal management blankets to raise cell core temp above +10°C.",
-          "Derate cyclic peak equipment loads and maintain continuous spinning reserve on diesel generators."
+          `Derate cyclic peak equipment loads and maintain continuous spinning reserve for ${durationHours} hours.`,
+          "Inspect individual cell voltages to detect reverse-polarity degradation."
         );
-        recoveryMinutes = 45;
+        recoveryMinutes = Math.min(240, Math.round(20 + degPct * 0.5 + durationHours * 3.5));
         break;
       }
 
       case "FUEL_SHORTAGE": {
         title = "Polar Diesel Storage Depletion & Resupply Crisis";
+        const durationHours = params.durationHours ?? 24;
         const lossLiters = params.fuelLossLiters ?? 75000;
         const currentQty = isMaitri ? 118500 : 152000;
-        const simQty = Math.max(10000, currentQty - lossLiters);
+        const simQty = Math.max(5000, currentQty - lossLiters);
         const dailyBurn = 680.0;
         const simRunwayDays = Number((simQty / dailyBurn).toFixed(1));
         const baseRunwayDays = Number((currentQty / dailyBurn).toFixed(1));
 
         scenarioState.logistics.daysOfFuelRemaining = Math.round(simRunwayDays);
 
-        riskScore = 88;
-        riskLevel = "CRITICAL";
+        const genAssets = scenarioState.assets.filter((a) => a.type === "GENERATOR");
+        for (const gen of genAssets) {
+          const genHealth = Math.max(25, Math.round(88 * (simQty / currentQty)));
+          gen.status = "DEGRADED";
+          gen.healthScore = genHealth;
+          impactedAssets.push({
+            assetId: gen.assetId,
+            assetName: gen.name,
+            assetType: gen.type,
+            baselineStatus: "OPERATIONAL",
+            simulatedStatus: "DEGRADED",
+            baselineHealth: 89,
+            simulatedHealth: genHealth,
+            failureCause: `Severe fuel rationing; fuel reserve dropped to ${simQty.toLocaleString()} L (${simRunwayDays} days runway)`,
+            criticality: gen.criticality,
+          });
+        }
+
+        riskScore = Math.min(99, Math.max(35, Math.round(92 - (simRunwayDays / 120) * 45 + durationHours * 0.3)));
+        riskLevel = simRunwayDays < 45 ? "CRITICAL" : "HIGH";
         riskFactors.push(
-          `Polar fuel reserve depleted from ${currentQty} L to ${simQty} L (-${lossLiters} L)`,
-          `Runway shortened to ${simRunwayDays} days (critical winter threshold: 45 days)`,
+          `Polar fuel reserve depleted from ${currentQty.toLocaleString()} L to ${simQty.toLocaleString()} L (-${lossLiters.toLocaleString()} L)`,
+          `Runway shortened to ${simRunwayDays} days (critical winter threshold: 45 days) over ${durationHours}h test window`,
           "Resupply urgency escalated to EMERGENCY"
         );
 
         explanation =
           `Major Polar Diesel fuel loss of ${lossLiters.toLocaleString()} Liters plunges station fuel reserves from ` +
-          `${baseRunwayDays} days to ${simRunwayDays} days. This breaches the mandatory 45-day winter survival buffer, ` +
+          `${baseRunwayDays} days to ${simRunwayDays} days over ${durationHours} hours. This breaches the mandatory 45-day winter survival buffer, ` +
           `endangering station survival through the 6-month Antarctic polar night before next summer ship access.`;
 
         comparisons.push(
           {
             metric: "Bulk Polar Fuel Reserve",
             unit: "Liters",
-            baseline: currentQty,
-            scenario: simQty,
+            baseline: `${currentQty.toLocaleString()} L`,
+            scenario: `${simQty.toLocaleString()} L`,
             absoluteChange: `-${lossLiters.toLocaleString()} L`,
             percentageChange: `-${Math.round((lossLiters / currentQty) * 100)}%`,
             severity: "CRITICAL",
@@ -467,14 +518,14 @@ export class ResilienceSimulationEngine {
             scenario: `${simRunwayDays} Days`,
             absoluteChange: `-${(baseRunwayDays - simRunwayDays).toFixed(1)} Days`,
             percentageChange: `-${Math.round(((baseRunwayDays - simRunwayDays) / baseRunwayDays) * 100)}%`,
-            severity: "CRITICAL",
+            severity: simRunwayDays < 45 ? "CRITICAL" : "WARNING",
             reason: "Depletion breaches winter survival reserve threshold",
           },
           {
             metric: "Resupply Urgency",
             unit: "Level",
             baseline: "ATTENTION",
-            scenario: "EMERGENCY",
+            scenario: simRunwayDays < 45 ? "EMERGENCY" : "HIGH",
             absoluteChange: "ESCALATION",
             percentageChange: "N/A",
             severity: "CRITICAL",
@@ -507,7 +558,7 @@ export class ResilienceSimulationEngine {
             domain: "LIFE_SUPPORT",
             severity: "WARNING",
             status: "CONSERVATION",
-            impactDescription: "Non-essential module heating curtailed",
+            impactDescription: `Non-essential module heating curtailed for ${durationHours}h`,
             metricValue: "+12°C Setpoint",
           }
         );
@@ -532,7 +583,7 @@ export class ResilienceSimulationEngine {
           "Consolidate station crew into core insulated habitat module; shut down auxiliary labs.",
           "Request emergency winter air-drop or overland traverse resupply."
         );
-        recoveryMinutes = 60;
+        recoveryMinutes = Math.min(360, Math.round(40 + (lossLiters / 10000) * 6 + durationHours * 1.5));
         break;
       }
 
@@ -545,9 +596,10 @@ export class ResilienceSimulationEngine {
         scenarioState.environment.ambientTempC = simTemp;
         scenarioState.environment.condition = "EXTREME_COLD";
 
+        const durationHours = params.durationHours ?? 12;
         // Higher electrical load from heating
         const baseLoadKw = baselineSnapshot.energy.totalLoadKw;
-        const extraHeatingKw = Math.round(tempDelta * 1.5);
+        const extraHeatingKw = Math.round(tempDelta * 1.5 + durationHours * 0.3);
         const simLoadKw = Math.round((baseLoadKw + extraHeatingKw) * 10) / 10;
         const singleGenCap = isMaitri ? 125.0 : 100.0;
         const loadFactorPct = Math.round((simLoadKw / singleGenCap) * 100);
@@ -555,10 +607,44 @@ export class ResilienceSimulationEngine {
         scenarioState.energy.totalLoadKw = simLoadKw;
         scenarioState.energy.netPowerKw = Math.round((scenarioState.energy.totalGenerationKw - simLoadKw) * 10) / 10;
 
-        riskScore = 82;
-        riskLevel = "HIGH";
+        const hvac = scenarioState.assets.find((a) => a.type === "HVAC");
+        if (hvac) {
+          hvac.status = loadFactorPct > 100 ? "CRITICAL" : "WARNING";
+          hvac.healthScore = Math.max(30, 87 - Math.round(tempDelta * 1.05 + durationHours * 0.4));
+          impactedAssets.push({
+            assetId: hvac.assetId,
+            assetName: hvac.name,
+            assetType: hvac.type,
+            baselineStatus: "OPERATIONAL",
+            simulatedStatus: hvac.status,
+            baselineHealth: 87,
+            simulatedHealth: hvac.healthScore,
+            failureCause: `HVAC heating boilers running at ${loadFactorPct}% load (+${extraHeatingKw} kW) in ${simTemp}°C cold for ${durationHours}h`,
+            criticality: hvac.criticality,
+          });
+        }
+
+        const waterSys = scenarioState.assets.find((a) => a.type === "WATER_SYSTEM" || a.type === ("WATER" as any));
+        if (waterSys) {
+          waterSys.status = simTemp <= -40 ? "WARNING" : "OPERATIONAL";
+          waterSys.healthScore = Math.max(30, 86 - Math.round(tempDelta * 0.8));
+          impactedAssets.push({
+            assetId: waterSys.assetId,
+            assetName: waterSys.name,
+            assetType: waterSys.type,
+            baselineStatus: "OPERATIONAL",
+            simulatedStatus: waterSys.status,
+            baselineHealth: 86,
+            simulatedHealth: waterSys.healthScore,
+            failureCause: "Trace heating circuit on lake intake line operating at continuous duty to prevent ice blockage",
+            criticality: waterSys.criticality,
+          });
+        }
+
+        riskScore = Math.min(99, Math.max(40, Math.round(42 + tempDelta * 1.05 + durationHours * 1.3)));
+        riskLevel = riskScore >= 75 ? "CRITICAL" : "HIGH";
         riskFactors.push(
-          `Ambient temperature dropped to ${simTemp}°C (-${tempDelta.toFixed(1)}°C chill)`,
+          `Ambient temperature dropped to ${simTemp}°C (-${tempDelta.toFixed(1)}°C chill) over ${durationHours}h`,
           `Station heating demand surged by +${extraHeatingKw} kW to ${simLoadKw} kW`,
           `Primary generator operating at ${loadFactorPct}% load factor (overload risk)`
         );
@@ -651,7 +737,7 @@ export class ResilienceSimulationEngine {
           "Prime and synchronize Standby Generator 2 to split grid electrical load.",
           "Inspect Priyadarshini water pipeline trace heating circuit amperages."
         );
-        recoveryMinutes = 20;
+        recoveryMinutes = Math.min(240, Math.round(15 + tempDelta * 0.8 + durationHours * 2.5));
         break;
       }
 
@@ -712,11 +798,11 @@ export class ResilienceSimulationEngine {
             criticality: solar.criticality,
           });
         }
-
-        riskScore = 78;
-        riskLevel = "HIGH";
+        const durationHours = params.durationHours ?? 8;
+        riskScore = Math.min(99, Math.max(45, Math.round(40 + (simWind - 25) * 1.35 + durationHours * 1.5)));
+        riskLevel = simWind >= 45 ? "CRITICAL" : "HIGH";
         riskFactors.push(
-          `Blizzard wind speeds reached ${simWind} m/s (${Math.round(simWind * 3.6)} km/h)`,
+          `Blizzard wind speeds reached ${simWind} m/s (${Math.round(simWind * 3.6)} km/h) over ${durationHours}h`,
           "Renewable generation lockout: wind turbine feathered & solar panels blinded",
           "Station exterior personnel movements locked down under Red Storm Alert"
         );
@@ -724,7 +810,7 @@ export class ResilienceSimulationEngine {
         explanation =
           `Category 5 Antarctic blizzard winds of ${simWind} m/s trigger automated turbine blade feathering ` +
           `and mechanical storm braking to prevent structural mast collapse. Blowing snow drifts reduce solar irradiance ` +
-          `to zero, shifting 100% of station power generation to diesel generators. Outside maintenance is barred.`;
+          `to zero, shifting 100% of station power generation to diesel generators. Outside maintenance is barred for ${durationHours} hours.`;
 
         comparisons.push(
           {
@@ -809,13 +895,14 @@ export class ResilienceSimulationEngine {
           "Monitor diesel generator air intake filters for snow ingestion.",
           "Await wind abatement below 25 m/s before releasing turbine mechanical brakes."
         );
-        recoveryMinutes = 120;
+        recoveryMinutes = Math.min(240, Math.round(15 + (simWind - 20) * 1.2 + durationHours * 3));
         break;
       }
 
       case "LOAD_REDUCTION": {
         title = "Strategic Demand Response & Non-Critical Load Curtailment";
         const reductionPct = params.loadReductionPct ?? 30;
+        const durationHours = params.durationHours ?? 6;
         const baseLoadKw = baselineSnapshot.energy.totalLoadKw;
         const baseGenKw = baselineSnapshot.energy.totalGenerationKw;
         const baseReserve = baselineSnapshot.energy.netPowerKw;
@@ -827,10 +914,25 @@ export class ResilienceSimulationEngine {
         scenarioState.energy.totalLoadKw = simLoadKw;
         scenarioState.energy.netPowerKw = simReserve;
 
-        riskScore = 10;
+        const mainBld = scenarioState.assets.find((a) => a.type === "BUILDING");
+        if (mainBld) {
+          impactedAssets.push({
+            assetId: mainBld.assetId,
+            assetName: mainBld.name,
+            assetType: mainBld.type,
+            baselineStatus: "OPERATIONAL",
+            simulatedStatus: "CURTAILED",
+            baselineHealth: mainBld.healthScore,
+            simulatedHealth: mainBld.healthScore,
+            failureCause: `Controlled load-shedding: ${savedKw} kW auxiliary science loads severed for ${durationHours}h`,
+            criticality: "MEDIUM",
+          });
+        }
+
+        riskScore = Math.max(5, Math.round(25 - (reductionPct * 0.4) - (durationHours * 0.2)));
         riskLevel = "LOW";
         riskFactors.push(
-          `Demand reduction protocol curtailed ${savedKw} kW of non-essential loads (-${reductionPct}%)`,
+          `Demand reduction protocol curtailed ${savedKw} kW of non-essential loads (-${reductionPct}%) over ${durationHours}h`,
           `Net generation reserve margin expanded to +${simReserve} kW`,
           "Diesel fuel burn rate reduced by ~170 L/day, extending winter runway"
         );
