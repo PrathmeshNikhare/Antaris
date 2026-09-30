@@ -14,6 +14,8 @@ import { IntelligencePage } from "./features/intelligence/IntelligencePage";
 import { SimulationsPage } from "./features/simulations/SimulationsPage";
 import { ReportsPage } from "./features/reports/ReportsPage";
 import { AuditPage } from "./features/audit/AuditPage";
+import { CopilotPage } from "./features/copilot/CopilotPage";
+import { DemoControlPage } from "./features/demo/DemoControlPage";
 
 export default function App(): React.JSX.Element {
   return (
@@ -36,6 +38,8 @@ export default function App(): React.JSX.Element {
                 <Route path="/simulations" element={<SimulationsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/audit" element={<AuditPage />} />
+                <Route path="/copilot" element={<CopilotPage />} />
+                <Route path="/demo" element={<DemoControlPage />} />
               </Routes>
             </main>
           </div>

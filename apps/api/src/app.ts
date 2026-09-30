@@ -17,6 +17,7 @@ import {
   createSimulationsRouter,
   createTwinRouter,
   createIntelligenceRouter,
+  createCopilotRouter,
 } from "./routes";
 
 const startTime = Date.now();
@@ -201,6 +202,9 @@ export function createApp(): express.Application {
           "/api/stations/:stationId/intelligence/risk",
           "/api/stations/:stationId/intelligence/recommendations",
           "/api/stations/:stationId/intelligence/observability",
+          "/api/copilot/chat",
+          "/api/copilot/health",
+          "/api/copilot/tools",
         ],
       },
     });
@@ -222,6 +226,7 @@ export function createApp(): express.Application {
   app.use("/api/twin", createTwinRouter());
   app.use("/api", createAlertsRouter());
   app.use("/api/simulations", createSimulationsRouter());
+  app.use("/api/copilot", createCopilotRouter());
 
   return app;
 }

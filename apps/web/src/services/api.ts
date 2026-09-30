@@ -180,4 +180,71 @@ export const twinApi = {
     const res = await fetch(`${API_BASE}/simulations/${simulationId}`);
     return handleResponse<ResilienceSimulationResult>(res);
   },
+
+  // ── Phase 7: Operations Copilot ─────────────────────────────────
+  async copilotChat(
+    message: string,
+    conversationHistory: Array<{ role: string; content: string }> = []
+  ): Promise<CopilotApiResponse> {
+    const res = await fetch(`${API_BASE}/copilot/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, conversationHistory }),
+    });
+    return handleResponse<CopilotApiResponse>(res);
+  },
+
+  async copilotHealth(): Promise<CopilotHealthResponse> {
+    const res = await fetch(`${API_BASE}/copilot/health`);
+    return handleResponse<CopilotHealthResponse>(res);
+  },
+
+  async copilotTools(): Promise<CopilotToolInfo[]> {
+    const res = await fetch(`${API_BASE}/copilot/tools`);
+    return handleResponse<CopilotToolInfo[]>(res);
+  },
 };
+
+// ── Copilot Types ───────────────────────────────────────────────────
+export interface CopilotToolTrace {
+  toolName: string;
+  args: Record<string, unknown>;
+  result: {
+    toolName: string;
+    success: boolean;
+    data: unknown;
+    provenance: {
+      source: string;
+      dataType: string;
+      timestamp: string;
+      disclaimer?: string;
+    };
+    error?: string;
+  };
+  durationMs: number;
+}
+
+export interface CopilotApiResponse {
+  answer: string;
+  toolCalls: CopilotToolTrace[];
+  modelInfo: {
+    model: string;
+    provider: string;
+    available: boolean;
+  };
+  processingMs: number;
+}
+
+export interface CopilotHealthResponse {
+  available: boolean;
+  model: string;
+  error?: string;
+  toolCount: number;
+  tools: string[];
+}
+
+export interface CopilotToolInfo {
+  name: string;
+  description: string;
+  parameters: unknown;
+}

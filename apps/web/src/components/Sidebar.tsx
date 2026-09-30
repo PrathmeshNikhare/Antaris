@@ -16,8 +16,10 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/environment", label: "Environment", icon: "❄" },
   { to: "/intelligence", label: "Intelligence", icon: "◈" },
   { to: "/simulations", label: "Simulations", icon: "▷" },
+  { to: "/copilot", label: "Ops Copilot", icon: "◈" },
   { to: "/reports", label: "Snapshots & Reports", icon: "▤" },
   { to: "/audit", label: "Audit Log", icon: "📋" },
+  { to: "/demo", label: "Demo Control", icon: "🎮" },
 ];
 
 export function Sidebar(): React.JSX.Element {
