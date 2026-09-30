@@ -4,7 +4,7 @@ Update this file after every completed phase.
 
 ## Current phase
 
-`Phase 4 Completed — Ready for Phase 5 (Explainable Operational Intelligence & AI/ML)`
+`Phase 5 Completed — Ready for Phase 6 (Resilience Simulation Engine)`
 
 ## Status
 
@@ -15,18 +15,18 @@ Update this file after every completed phase.
 | 2 Telemetry & Comms Resilience | COMPLETED | Deterministic PRNG baseline, expanded sensor telemetry (environment, generators, batteries, HVAC, water, comms, energy, logistics), strict source/quality validation, per-stream sequence handling with deduplication, gap and out-of-order tracking, persistent store-and-forward edge buffer with batch replay and acknowledgement metadata, 4-state connectivity degradation simulation (NORMAL, DEGRADED, OFFLINE, RECOVERY), and 6 anomaly demo controls |
 | 3 Digital Twin | COMPLETED | In-memory TwinState registry, TwinAssetState, typed metric->twin property mapping, recursive DFS downstream dependency impact cascade traversal, deterministic explainable station status assessment, freshness tracking (FRESH, STALE, UNKNOWN), provenance preservation, WebSocket streaming server on /ws, immutable serializable snapshots, and historical time-travel state reconstruction |
 | 4 Dashboard | COMPLETED | Desktop-first Operations Command Center (warm off-white/forest green design tokens, 10 primary navigation routes, 4-domain KPI summary, interactive 2D Digital Twin schematic plan, asset selection inspector, downstream impact cascade visualization, live WebSocket stream integration, connectivity & anomaly controls, and snapshot archival) |
-| 5 AI/ML | NOT STARTED | Next: Rule-based anomaly detection, Isolation Forest model, rolling statistics, energy demand forecasting, and cross-domain risk correlation |
-| 6 Simulation | NOT STARTED | |
+| 5 AI/ML | COMPLETED | Explainable Operational Intelligence: Dual-layer anomaly detection (SPC 3-sigma rules + Isolation Forest), explainable evidence generator, 24h predictive diurnal energy forecasting with P10/P90 confidence bounds, multi-commodity inventory depletion forecasting, composite asset health scoring with disclaimer, deterministic cross-domain causal cascade engine, advisory recommendations, model observability persistence, and interactive Causal Chain UI |
+| 6 Simulation | NOT STARTED | Next: Maitri-Bharati Resilience Simulation Engine on immutable Twin snapshots |
 | 7 LLM | NOT STARTED | |
 | 8 Hardening | NOT STARTED | |
 
 ## Latest handoff
 
-Phase 4 Operations Command Center handoff documented in [handoff.md](file:///c:/Users/Vidhansh/OneDrive/Desktop/sih69/Maitri-Bharti/handoff.md).
+Phase 5 Operational Intelligence handoff documented in [handoff.md](file:///c:/Users/Vidhansh/OneDrive/Desktop/sih69/Maitri-Bharti/handoff.md).
 
 ## Known issues
 
-None. Both Docker containers (TimescaleDB on 5433, Mosquitto MQTT on 1883) healthy. All 39 tests passing across shared, api, and web workspaces.
+None. Zero lint/typecheck errors. 23 unit and integration tests passing across shared, api, and web workspaces.
 
 ## Decisions log
 
@@ -54,4 +54,7 @@ Reason: Keeps remote monitoring at zero-latency without saturating TimescaleDB, 
 
 2026-09-29 — Built Desktop-First Operations Command Center using ui-ux.md warm off-white and forest green tokens with native WebSocket stream hooks.
 Reason: Provides high-density polar operations monitoring, explainable status rollups, and interactive downstream failure cascade inspection without generic AI cliches.
+
+2026-09-30 — Implemented Phase 5 Explainable Operational Intelligence.
+Reason: Transforms multi-sensor telemetry into an auditable causal chain (Anomaly -> Evidence -> Forecast -> Asset Health -> Cross-Domain Risk -> Recommendation) with native TypeScript Isolation Forest, dual-layer SPC detection, and zero external runtime dependencies.
 ```

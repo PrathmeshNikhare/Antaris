@@ -19,7 +19,17 @@ export class StationAggregateEvaluator {
     const contributingAssets: string[] = [];
     const contributingAlerts: string[] = [];
 
-    // 1. Check for critical alerts
+    // 1. Check for complete polar satellite blackout
+    if (connectivityState === "OFFLINE") {
+      return {
+        currentState: "OFFLINE",
+        reason: "Polar satellite link blackout: all telemetry buffered at edge SSD",
+        contributingAssets: ["Polar Satellite Terminal [OFFLINE]"],
+        contributingAlerts,
+      };
+    }
+
+    // 2. Check for critical alerts
     const criticalAlerts = activeAlerts.filter(
       (a) => a.severity === "CRITICAL" && a.status === "OPEN"
     );
@@ -76,12 +86,12 @@ export class StationAggregateEvaluator {
       };
     }
 
-    // 4. Check connectivity degradation
-    if (connectivityState === "DEGRADED" || connectivityState === "OFFLINE") {
+    // 5. Check connectivity degradation
+    if (connectivityState === "DEGRADED") {
       return {
         currentState: "DEGRADED",
-        reason: `Communications link degraded (${connectivityState})`,
-        contributingAssets,
+        reason: "Communications link degraded: polar satellite link experiencing 30% packet loss",
+        contributingAssets: [...contributingAssets, "Polar Satellite Terminal [DEGRADED]"],
         contributingAlerts,
       };
     }

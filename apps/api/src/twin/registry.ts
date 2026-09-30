@@ -11,6 +11,8 @@ import {
   AlertRepository,
   TelemetryRepository,
 } from "../repositories";
+import { maitriBharatiSeedData } from "../db/seeds/maitri_bharati_seeds";
+import { hardeningSeedData } from "../db/seeds/hardening_seeds";
 import type {
   TwinState,
   TwinAssetState,
@@ -116,17 +118,96 @@ export class TwinStateRegistry {
       this.initialized = true;
       console.log(`[twin-registry] Digital Twin initialized for ${this.states.size} stations`);
     } catch (err) {
-      console.error("[twin-registry] Failed to initialize twin registry from database:", err);
+      console.warn("[twin-registry] Database unavailable, initializing in-memory fallback from seed definitions:", err);
+      this.initFromStaticSeeds();
     }
   }
 
+  public initFromStaticSeeds(): void {
+    const seedStations = maitriBharatiSeedData.stations;
+    const allAssets = maitriBharatiSeedData.assets;
+    const deps = hardeningSeedData.dependencies;
+    const metricDefs = hardeningSeedData.metricDefinitions;
+
+    this.healthEvaluator.updateDefinitions(metricDefs as any);
+    this.dependencyGraph.updateGraph(deps as any);
+
+    for (const st of seedStations) {
+      const stationAssets = allAssets.filter((a) => a.stationId === st.id);
+      const twinAssets: TwinAssetState[] = stationAssets.map((a) => ({
+        assetId: a.id,
+        stationId: st.id,
+        name: a.name,
+        type: a.type,
+        criticality: a.criticality,
+        currentTelemetry: {},
+        status: a.status,
+        healthScore: a.healthScore ?? 90,
+        lastUpdate: new Date().toISOString(),
+        freshness: computeFreshness(new Date()),
+        dataQuality: "GOOD",
+        anomalyState: { hasActiveAnomaly: false },
+        maintenanceState: { inMaintenance: a.status === "MAINTENANCE" },
+        impactedDownstreamAssets: [],
+      }));
+
+      const nowIso = new Date().toISOString();
+      const energy = this.aggregateEvaluator.evaluateEnergyState(twinAssets, nowIso);
+      const env = this.aggregateEvaluator.evaluateEnvironmentState(twinAssets, nowIso);
+      const logistics = this.aggregateEvaluator.evaluateLogisticsState(twinAssets, nowIso);
+      const statusAssessment = this.aggregateEvaluator.evaluateStationStatus(
+        twinAssets,
+        [],
+        "NORMAL"
+      );
+      const risk = this.aggregateEvaluator.evaluateOperationalRisk(
+        statusAssessment.currentState,
+        env,
+        energy,
+        logistics
+      );
+
+      const twinState: TwinState = {
+        stationId: st.id,
+        stationCode: st.code,
+        stationName: st.name,
+        timestamp: nowIso,
+        statusAssessment,
+        stationStatus: statusAssessment.currentState,
+        lastSynchronization: nowIso,
+        dataFreshness: computeFreshness(new Date()),
+        connectivityState: "NORMAL",
+        dataQualitySummary: { goodCount: 10, suspectCount: 0, badCount: 0, overallQuality: "GOOD" },
+        assets: twinAssets,
+        energy,
+        environment: env,
+        logistics,
+        activeAlerts: [],
+        operationalRisk: risk,
+        recentTransitions: [],
+      };
+
+      this.states.set(st.id, twinState);
+    }
+
+    this.initialized = true;
+    console.log(`[twin-registry] Digital Twin fallback initialized for ${this.states.size} stations`);
+  }
+
   getTwinState(stationId: string): TwinState | undefined {
-    const state = this.states.get(stationId);
+    let state = this.states.get(stationId);
+    if (!state && this.states.size === 0) {
+      this.initFromStaticSeeds();
+      state = this.states.get(stationId);
+    }
     if (!state) return undefined;
 
     // Refresh freshness timestamps before returning
     const now = new Date();
     state.dataFreshness = computeFreshness(state.lastSynchronization, now);
+    if (state.connectivityState === "OFFLINE" && state.dataFreshness.status === "FRESH") {
+      state.dataFreshness.status = "STALE";
+    }
     for (const asset of state.assets) {
       asset.freshness = computeFreshness(asset.lastUpdate, now);
       for (const prop of Object.values(asset.currentTelemetry)) {
@@ -301,6 +382,41 @@ export class TwinStateRegistry {
     if (!stationState) return;
 
     stationState.connectivityState = state;
+
+    // Mutate comms asset health based on connectivity link state
+    const commAssetId = stationId === "station-maitri" ? "asset-maitri-comm-1" : "asset-bharati-ground-1";
+    const commAsset = stationState.assets.find((a) => a.assetId === commAssetId);
+    if (commAsset) {
+      if (state === "OFFLINE") {
+        commAsset.status = "OFFLINE";
+        commAsset.healthScore = 0;
+      } else if (state === "DEGRADED") {
+        commAsset.status = "DEGRADED";
+        commAsset.healthScore = 55;
+      } else if (state === "RECOVERY") {
+        commAsset.status = "OPERATIONAL";
+        commAsset.healthScore = 85;
+      } else {
+        commAsset.status = "OPERATIONAL";
+        commAsset.healthScore = 90;
+      }
+
+      twinWebSocketManager.broadcast("asset.state_changed", stationId, commAsset);
+    }
+
+    // In blackout, mark freshness as stale immediately since transmission is severed
+    if (state === "OFFLINE") {
+      const syncIso =
+        typeof stationState.lastSynchronization === "string"
+          ? stationState.lastSynchronization
+          : (stationState.lastSynchronization as Date)?.toISOString?.() ?? new Date().toISOString();
+      stationState.dataFreshness = {
+        observedAt: syncIso,
+        ageSeconds: Math.max(35, stationState.dataFreshness.ageSeconds),
+        status: "STALE",
+      };
+    }
+
     stationState.statusAssessment = this.aggregateEvaluator.evaluateStationStatus(
       stationState.assets,
       stationState.activeAlerts,
@@ -310,6 +426,10 @@ export class TwinStateRegistry {
 
     twinWebSocketManager.broadcast("connectivity.changed", stationId, {
       connectivityState: state,
+      statusAssessment: stationState.statusAssessment,
+    });
+    twinWebSocketManager.broadcast("station.state_changed", stationId, {
+      stationStatus: stationState.stationStatus,
       statusAssessment: stationState.statusAssessment,
     });
   }

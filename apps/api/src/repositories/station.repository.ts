@@ -1,4 +1,5 @@
 import { getPool } from "../db/pool";
+import { maitriBharatiSeedData } from "../db/seeds/maitri_bharati_seeds";
 import type { Station, StationCode, StationStatus, DataMode } from "@maitri-bharati/shared";
 
 interface StationRow {
@@ -25,29 +26,71 @@ function mapRowToStation(row: StationRow): Station {
 
 export class StationRepository {
   async findAll(): Promise<Station[]> {
-    const pool = getPool();
-    const res = await pool.query<StationRow>(
-      "SELECT id, code, name, location_label, status, last_sync_at, data_mode FROM stations ORDER BY name ASC;"
-    );
-    return res.rows.map(mapRowToStation);
+    try {
+      const pool = getPool();
+      const res = await pool.query<StationRow>(
+        "SELECT id, code, name, location_label, status, last_sync_at, data_mode FROM stations ORDER BY name ASC;"
+      );
+      return res.rows.map(mapRowToStation);
+    } catch {
+      return maitriBharatiSeedData.stations.map((s) => ({
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        locationLabel: s.locationLabel,
+        status: s.status,
+        lastSyncAt: new Date(),
+        dataMode: s.dataMode,
+      }));
+    }
   }
 
   async findById(id: string): Promise<Station | null> {
-    const pool = getPool();
-    const res = await pool.query<StationRow>(
-      "SELECT id, code, name, location_label, status, last_sync_at, data_mode FROM stations WHERE id = $1;",
-      [id]
-    );
-    return res.rows.length > 0 ? mapRowToStation(res.rows[0]) : null;
+    try {
+      const pool = getPool();
+      const res = await pool.query<StationRow>(
+        "SELECT id, code, name, location_label, status, last_sync_at, data_mode FROM stations WHERE id = $1;",
+        [id]
+      );
+      return res.rows.length > 0 ? mapRowToStation(res.rows[0]) : null;
+    } catch {
+      const s = maitriBharatiSeedData.stations.find((st) => st.id === id);
+      if (!s) return null;
+      return {
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        locationLabel: s.locationLabel,
+        status: s.status,
+        lastSyncAt: new Date(),
+        dataMode: s.dataMode,
+      };
+    }
   }
 
   async findByCode(code: string): Promise<Station | null> {
-    const pool = getPool();
-    const res = await pool.query<StationRow>(
-      "SELECT id, code, name, location_label, status, last_sync_at, data_mode FROM stations WHERE UPPER(code) = UPPER($1);",
-      [code]
-    );
-    return res.rows.length > 0 ? mapRowToStation(res.rows[0]) : null;
+    try {
+      const pool = getPool();
+      const res = await pool.query<StationRow>(
+        "SELECT id, code, name, location_label, status, last_sync_at, data_mode FROM stations WHERE UPPER(code) = UPPER($1);",
+        [code]
+      );
+      return res.rows.length > 0 ? mapRowToStation(res.rows[0]) : null;
+    } catch {
+      const s = maitriBharatiSeedData.stations.find(
+        (st) => st.code.toUpperCase() === code.toUpperCase()
+      );
+      if (!s) return null;
+      return {
+        id: s.id,
+        code: s.code,
+        name: s.name,
+        locationLabel: s.locationLabel,
+        status: s.status,
+        lastSyncAt: new Date(),
+        dataMode: s.dataMode,
+      };
+    }
   }
 
   async updateStatus(id: string, status: StationStatus): Promise<Station | null> {

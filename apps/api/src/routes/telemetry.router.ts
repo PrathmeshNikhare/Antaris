@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
 import { TelemetryRepository } from "../repositories";
 import { getTelemetryPipeline, type AnomalyDefinition } from "../telemetry";
+import { intelligenceService } from "../intelligence";
+import { twinWebSocketManager } from "../twin/websocket";
+import { getTwinRegistry } from "../twin/registry";
 import type { SimulatorMode } from "@maitri-bharati/shared";
 
 export function createTelemetryRouter(): Router {
@@ -174,7 +177,7 @@ export function createTelemetryRouter(): Router {
   });
 
   // POST /api/telemetry/simulate/connectivity
-  router.post("/simulate/connectivity", (req: Request, res: Response) => {
+  router.post("/simulate/connectivity", async (req: Request, res: Response) => {
     try {
       const { simulator } = getTelemetryPipeline();
       const state = req.body?.state;
@@ -186,6 +189,53 @@ export function createTelemetryRouter(): Router {
         return;
       }
       simulator.setConnectivityState(state);
+      try {
+        const twinRegistry = getTwinRegistry();
+        twinRegistry.setConnectivityState("station-maitri", state);
+        twinRegistry.setConnectivityState("station-bharati", state);
+      } catch (e) {
+        console.warn("[telemetry.router] Warning synchronizing twin registry connectivity:", e);
+      }
+
+      if (state === "OFFLINE") {
+        for (const stn of ["station-maitri", "station-bharati"] as const) {
+          const assetId = stn === "station-maitri" ? "asset-maitri-comm-1" : "asset-bharati-ground-1";
+          intelligenceService.evaluateTelemetry({
+            id: `blackout-loss-${Date.now()}`,
+            stationId: stn,
+            assetId,
+            metric: "packet_loss_pct",
+            value: 100.0,
+            unit: "%",
+            timestamp: new Date(),
+            source: "SIMULATED",
+            quality: "BAD",
+            sequence: 0,
+          });
+          intelligenceService.evaluateTelemetry({
+            id: `blackout-snr-${Date.now()}`,
+            stationId: stn,
+            assetId,
+            metric: "snr_db",
+            value: 0.0,
+            unit: "dB",
+            timestamp: new Date(),
+            source: "SIMULATED",
+            quality: "BAD",
+            sequence: 0,
+          });
+          const anomalies = intelligenceService.anomalyService.getActiveAnomalies(stn);
+          twinWebSocketManager.broadcast("intelligence.updated", stn, {
+            stationId: stn,
+            activeAnomalies: anomalies,
+          });
+        }
+      } else if (state === "RECOVERY") {
+        await simulator.replayStoreAndForwardBatches(100);
+      }
+
+      // Step simulator immediately so comms degradation, blackout, or recovery is published without delay
+      await simulator.step();
       res.json({ success: true, data: simulator.getStatus() });
     } catch (err) {
       res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: String(err) } });
@@ -221,6 +271,11 @@ export function createTelemetryRouter(): Router {
       if (preset === "NORMAL") {
         simulator.clearAnomalies();
         simulator.setConnectivityState("NORMAL");
+        intelligenceService.anomalyService.clearAnomalies(stationId);
+        twinWebSocketManager.broadcast("intelligence.updated", stationId, {
+          stationId,
+          activeAnomalies: [],
+        });
         await simulator.step();
         res.json({
           success: true,

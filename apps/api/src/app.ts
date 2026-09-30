@@ -16,6 +16,7 @@ import {
   createForecastsRouter,
   createSimulationsRouter,
   createTwinRouter,
+  createIntelligenceRouter,
 } from "./routes";
 
 const startTime = Date.now();
@@ -192,6 +193,14 @@ export function createApp(): express.Application {
           "/api/twin/:stationId/time-travel",
           "/api/stations/:stationId/forecasts",
           "/api/stations/:stationId/simulations",
+          "/api/stations/:stationId/intelligence",
+          "/api/stations/:stationId/intelligence/anomalies",
+          "/api/stations/:stationId/intelligence/forecasts/energy",
+          "/api/stations/:stationId/intelligence/forecasts/inventory",
+          "/api/stations/:stationId/intelligence/health",
+          "/api/stations/:stationId/intelligence/risk",
+          "/api/stations/:stationId/intelligence/recommendations",
+          "/api/stations/:stationId/intelligence/observability",
         ],
       },
     });
@@ -201,6 +210,8 @@ export function createApp(): express.Application {
   app.use("/api/stations", createStationsRouter());
   app.use("/api/stations", createInventoryRouter());
   app.use("/api/stations", createForecastsRouter());
+  app.use("/api/stations", createIntelligenceRouter());
+  app.use("/api/intelligence", createIntelligenceRouter());
   app.use("/api/assets", createAssetsRouter());
   app.use("/api/dependencies", createDependenciesRouter());
   app.use("/api/metrics", createMetricsRouter());

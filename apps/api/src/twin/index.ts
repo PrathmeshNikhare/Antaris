@@ -2,6 +2,7 @@ import type { Server } from "http";
 import { getTwinRegistry, TwinStateRegistry } from "./registry";
 import { twinWebSocketManager } from "./websocket";
 import type { TelemetryIngestService } from "../telemetry";
+import { intelligenceService } from "../intelligence";
 
 export * from "./freshness";
 export * from "./health";
@@ -30,6 +31,7 @@ export async function initTwinEngine(
     if (ingest) {
       ingest.addListener((point) => {
         registry.handleTelemetryPoint(point);
+        intelligenceService.evaluateTelemetry(point);
       });
       console.log("[twin-engine] Subscribed to live telemetry ingest stream");
     }

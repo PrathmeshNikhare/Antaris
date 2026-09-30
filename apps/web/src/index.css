@@ -319,8 +319,10 @@ body {
 }
 
 .badge--offline {
-  background-color: #f1f5f9;
-  color: #64748b;
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  font-weight: 600;
 }
 
 .badge--info {

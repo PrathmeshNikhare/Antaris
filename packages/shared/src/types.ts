@@ -436,12 +436,187 @@ export type TwinEventType =
   | "alert.created"
   | "alert.updated"
   | "connectivity.changed"
-  | "dependency.impact_changed";
+  | "dependency.impact_changed"
+  | "intelligence.updated";
 
 export interface TwinWebSocketMessage<T = unknown> {
   type: TwinEventType;
   stationId: string;
   timestamp: string;
   payload: T;
+}
+
+// ─── Phase 5: Explainable Operational Intelligence ───────────────
+
+export type AnomalySeverity = "INFO" | "WARNING" | "CRITICAL";
+
+export interface AnomalyEvidence {
+  deviationFromBaseline: number;
+  deviationUnit: string;
+  zScore: number;
+  trendDirection: "RISING" | "FALLING" | "STABLE";
+  rateOfChange: number; // change per minute
+  thresholdCrossing?: {
+    threshold: number;
+    thresholdType: "WARNING" | "CRITICAL";
+    actual: number;
+  };
+  contributingWindowMinutes: number;
+  baselineExpected: number;
+  humanReadable: string;
+}
+
+export interface AnomalyResult {
+  id: string;
+  stationId: string;
+  assetId: string;
+  metric: string;
+  score: number; // 0.0 - 1.0 (isolation forest or normalized rule score)
+  isAnomaly: boolean;
+  severity: AnomalySeverity;
+  confidence: number; // 0.0 - 1.0
+  detectedAt: string;
+  modelVersion: string;
+  modelType: "RULE_BASED" | "ISOLATION_FOREST" | "HYBRID";
+  evidence: AnomalyEvidence;
+  dataQuality: DataQuality;
+}
+
+export interface EnergyForecastPoint {
+  timestamp: string;
+  hourOffset: number; // 1 to 24
+  predictedDemandKw: number;
+  lowerDemandKw: number; // P10 bound
+  upperDemandKw: number; // P90 bound
+  predictedGenerationKw: number;
+  solarGenerationKw: number;
+  windGenerationKw: number;
+  netReserveKw: number;
+  fuelConsumptionRateLph: number;
+}
+
+export interface EnergyForecast {
+  stationId: string;
+  generatedAt: string;
+  modelVersion: string;
+  horizonHours: number;
+  points: EnergyForecastPoint[];
+  confidence: number;
+  assumptions: string[];
+}
+
+export interface InventoryForecast {
+  stationId: string;
+  itemCode: string;
+  itemName: string;
+  category: "FUEL" | "WATER" | "FOOD" | "SPARES";
+  currentQuantity: number;
+  unit: string;
+  dailyBurnRate: number;
+  daysRemaining: number;
+  depletionDate: string;
+  thresholdCrossingDate: string;
+  consumptionTrend: "ACCELERATING" | "STEADY" | "DECELERATING";
+  leadTimeRisk: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
+  resupplyUrgency: "ROUTINE" | "ATTENTION" | "URGENT" | "EMERGENCY";
+  generatedAt: string;
+}
+
+export interface AssetHealthScore {
+  assetId: string;
+  stationId: string;
+  assetName: string;
+  assetType: AssetType;
+  overallScore: number; // 0 to 100
+  status: AssetStatus;
+  telemetryPenalty: number;
+  anomalyPenalty: number;
+  runtimePenalty: number;
+  maintenancePenalty: number;
+  stressPenalty: number;
+  dataConfidencePenalty: number;
+  factors: string[];
+  disclaimer: string; // "Decision-support indicator, not a guaranteed failure probability"
+  evaluatedAt: string;
+}
+
+export interface CausalNode {
+  id: string;
+  domain: "INFRASTRUCTURE" | "ENERGY" | "ENVIRONMENT" | "LOGISTICS";
+  label: string;
+  severity: "NORMAL" | "WARNING" | "CRITICAL";
+  description: string;
+  metricValue?: string;
+}
+
+export interface CausalLink {
+  source: string;
+  target: string;
+  impact: string;
+}
+
+export interface CrossDomainCascade {
+  id: string;
+  title: string;
+  triggerDomain: string;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  nodes: CausalNode[];
+  links: CausalLink[];
+  summary: string;
+}
+
+export interface CrossDomainRiskAssessment {
+  stationId: string;
+  overallRiskScore: number; // 0 to 100
+  overallLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  cascades: CrossDomainCascade[];
+  contributingFactors: string[];
+  generatedAt: string;
+}
+
+export type SuggestedActionType =
+  | "INSPECT_ASSET"
+  | "REDUCE_LOAD"
+  | "CHECK_SPARES"
+  | "MONITOR_TREND"
+  | "RUN_SIMULATION";
+
+export interface AdvisoryRecommendation {
+  id: string;
+  stationId: string;
+  title: string;
+  description: string;
+  domain: "MAINTENANCE" | "ENERGY" | "LOGISTICS" | "OPERATIONS";
+  priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  suggestedAction: SuggestedActionType;
+  targetAssetId?: string;
+  isAdvisory: boolean; // Always true
+  rationale: string;
+  createdTimestamp: string;
+}
+
+export interface ModelObservabilityRecord {
+  id: string;
+  modelName: string;
+  modelVersion: string;
+  task: "ANOMALY_DETECTION" | "ENERGY_FORECAST" | "INVENTORY_FORECAST" | "HEALTH_SCORE" | "RISK_CASCADE";
+  generatedAt: string;
+  inputSummary: Record<string, unknown>;
+  resultSummary: Record<string, unknown>;
+  confidence: number;
+  executionDurationMs: number;
+  evidenceCount: number;
+}
+
+export interface StationIntelligenceSummary {
+  stationId: string;
+  timestamp: string;
+  activeAnomalies: AnomalyResult[];
+  energyForecast: EnergyForecast;
+  inventoryForecasts: InventoryForecast[];
+  assetHealthScores: AssetHealthScore[];
+  crossDomainRisk: CrossDomainRiskAssessment;
+  recommendations: AdvisoryRecommendation[];
+  observability: ModelObservabilityRecord[];
 }
 

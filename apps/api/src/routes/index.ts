@@ -11,3 +11,4 @@ export * from "./audit.router";
 export * from "./forecasts.router";
 export * from "./simulations.router";
 export * from "./twin.router";
+export * from "./intelligence.router";

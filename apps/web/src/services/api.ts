@@ -5,6 +5,7 @@ import type {
   Alert,
   MaintenanceEvent,
   AuditEvent,
+  StationIntelligenceSummary,
 } from "@maitri-bharati/shared";
 
 const API_BASE = "http://localhost:3001/api";
@@ -128,5 +129,15 @@ export const twinApi = {
   async createSnapshot(stationId: string): Promise<unknown> {
     const res = await fetch(`${API_BASE}/twin/${stationId}/snapshot`);
     return handleResponse<unknown>(res);
+  },
+
+  async getIntelligence(stationId: string): Promise<StationIntelligenceSummary> {
+    const res = await fetch(`${API_BASE}/stations/${stationId}/intelligence`);
+    return handleResponse<StationIntelligenceSummary>(res);
+  },
+
+  async getTelemetryHistory(stationId: string, metric = "power_output_kw", limit = 48): Promise<any[]> {
+    const res = await fetch(`${API_BASE}/telemetry?stationId=${stationId}&metric=${metric}&limit=${limit}`);
+    return handleResponse<any[]>(res);
   },
 };

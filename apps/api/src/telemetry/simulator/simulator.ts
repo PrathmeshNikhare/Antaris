@@ -107,6 +107,31 @@ export class TelemetrySimulator {
         simulatedDate
       );
 
+      // Comms channel degradation overrides on communications terminals only
+      const isCommsAsset =
+        sensor.assetId === "asset-maitri-comm-1" || sensor.assetId === "asset-bharati-ground-1";
+      const hasActiveAnomaly = this.anomalyMgr.getActive(sensor.stationId, sensor.assetId, sensor.metric);
+
+      if (isCommsAsset && !hasActiveAnomaly) {
+        if (this.connectivityState === "DEGRADED") {
+          if (sensor.metric === "packet_loss_pct") {
+            envelope.value = 30.0 + Number(((Math.random() * 2) - 1).toFixed(1));
+          } else if (sensor.metric === "latency_ms") {
+            envelope.value = 1450.0 + Number(((Math.random() * 80) - 40).toFixed(0));
+          } else if (sensor.metric === "snr_db") {
+            envelope.value = 7.5 + Number(((Math.random() * 0.4) - 0.2).toFixed(1));
+          }
+        } else if (this.connectivityState === "OFFLINE") {
+          if (sensor.metric === "packet_loss_pct") {
+            envelope.value = 100.0;
+          } else if (sensor.metric === "latency_ms") {
+            envelope.value = 3000.0;
+          } else if (sensor.metric === "snr_db") {
+            envelope.value = 0.0;
+          }
+        }
+      }
+
       emitted.push(envelope);
 
       // Handle based on connectivity state
@@ -115,13 +140,19 @@ export class TelemetrySimulator {
         this.bufferQueue.enqueue(envelope, topic);
       } else if (this.connectivityState === "DEGRADED") {
         // In degraded mode, simulate polar satellite link packet drops and burst delays
-        // 70% chance of immediate delivery, 30% routed to edge buffer for later sync
-        const dropped = Math.random() < 0.3;
-        if (dropped) {
-          this.bufferQueue.enqueue(envelope, topic);
-        } else {
+        // For communications telemetry itself, deliver to MQTT so Twin & Intelligence reflect degraded state
+        if (isCommsAsset) {
           await this.mqtt.publish(topic, envelope);
           this.lastSuccessfulSync = simulatedDate;
+        } else {
+          // 70% chance of immediate delivery, 30% routed to edge buffer for later sync
+          const dropped = Math.random() < 0.3;
+          if (dropped) {
+            this.bufferQueue.enqueue(envelope, topic);
+          } else {
+            await this.mqtt.publish(topic, envelope);
+            this.lastSuccessfulSync = simulatedDate;
+          }
         }
       } else {
         // NORMAL or RECOVERY: publish directly to MQTT broker
@@ -172,6 +203,13 @@ export class TelemetrySimulator {
         this.connectivityState = "NORMAL";
         this.mode = "normal";
         this.totalToReplayAtRecoveryStart = 0;
+        void import("../../twin/registry").then(({ getTwinRegistry }) => {
+          try {
+            const registry = getTwinRegistry();
+            registry.setConnectivityState("station-maitri", "NORMAL");
+            registry.setConnectivityState("station-bharati", "NORMAL");
+          } catch {}
+        });
       }
 
       console.log(
@@ -199,7 +237,9 @@ export class TelemetrySimulator {
       this.bufferQueue.clear();
       this.totalToReplayAtRecoveryStart = 0;
     } else if (state === "DEGRADED") {
-      this.mode = "noisy";
+      // Degraded connectivity handles packet transmission drops and network latency
+      // Physical sensors (wind, battery, generators) continue measuring physical state
+      this.mode = "normal";
     }
   }
 
@@ -251,7 +291,6 @@ export class TelemetrySimulator {
       assetId,
       metric: "temperature",
       targetValue: 98.5,
-      durationSeconds: 300,
     });
   }
 
@@ -263,7 +302,6 @@ export class TelemetrySimulator {
       assetId,
       metric: "fuel_consumption_lph",
       multiplier: 2.2,
-      durationSeconds: 300,
     });
   }
 
@@ -275,7 +313,6 @@ export class TelemetrySimulator {
       assetId,
       metric: "state_of_charge_pct",
       targetValue: 14.5,
-      durationSeconds: 300,
     });
   }
 
@@ -287,7 +324,6 @@ export class TelemetrySimulator {
       assetId,
       metric: "thermal_load_kw",
       targetValue: 92.0,
-      durationSeconds: 300,
     });
   }
 
@@ -299,7 +335,6 @@ export class TelemetrySimulator {
       assetId,
       metric: "packet_loss_pct",
       targetValue: 78.0,
-      durationSeconds: 300,
     });
   }
 
@@ -309,7 +344,6 @@ export class TelemetrySimulator {
       stationId,
       metric: "wind_speed",
       targetValue: 46.5,
-      durationSeconds: 300,
     });
   }
 

@@ -209,8 +209,90 @@ Operator selects "GEN-01 Overheat & Trip" in TopBar Demo Scenario dropdown
 
 ---
 
-## Next Steps: Phase 5 (Explainable Operational Intelligence & AI/ML)
-- Implement rule-based and Isolation Forest anomaly detection models for multi-sensor streams.
-- Generate structured evidence windows (deviation from baseline, rolling statistics, rate-of-change, threshold crossing).
-- Build energy demand and fuel consumption forecasting models (next 24h demand, generation, reserve).
-- Connect cross-domain risk correlation into the Command Center Intelligence view.
+## Phase 5: Explainable Operational Intelligence & AI/ML
+
+### Completed Implementations
+
+1. **Dual-Layer Anomaly Detection (`apps/api/src/intelligence/anomaly/`)**:
+   - **Layer 1 (Deterministic Baseline & SPC)**: Evaluates dynamic rolling statistical process control (SPC) bands (moving average $\pm 2.5\sigma$ warning, $\pm 3.5\sigma$ critical), rate-of-change limits ($\Delta v / \Delta t$), and physical limit thresholds from `MetricDefinition`.
+   - **Layer 2 (Isolation Forest / iForest)**: Implemented a native TypeScript multi-tree Isolation Forest ensemble evaluated over 4-dimensional normalized feature vectors:
+     $$\mathbf{x} = \left[ \frac{x - \mu}{\sigma}, |z|, \frac{\Delta v / \Delta t}{\sigma}, \frac{\sigma^2}{\sigma_{\text{baseline}}^2} \right]$$
+     Computes average tree path length $h(x)$ normalized against $c(n)$, returning anomaly scores $[0.00, 1.00]$ with tree-split feature attribution for complete explainability.
+   - **Fused Score & Confidence**: Fuses rule scores with iForest outputs and factors in data quality (`GOOD`: 0.94, `SUSPECT`: 0.65, `BAD`: 0.25).
+
+2. **Auditable Evidence Generation (`evidence-builder.ts`)**:
+   - Every anomaly produces an auditable `AnomalyEvidence` record containing:
+     - `deviationFromBaseline` and unit
+     - `zScore` ($\sigma$)
+     - `trendDirection` (`RISING`, `FALLING`, `STABLE`)
+     - `rateOfChange` per minute
+     - `thresholdCrossing` with breached threshold type and actual value
+     - `contributingWindowMinutes`
+     - Human-readable natural-language explanation string
+
+3. **24-Hour Energy Forecasting Engine (`energy-forecaster.ts`)**:
+   - Models polar diurnal physics:
+     - Ambient temperature cycle with sine variation ($\pm 4.0^\circ\text{C}$)
+     - Solar PV generation arc (peak daylight window)
+     - Wind generation from turbine power curves
+     - Electrical & heating demand: base load + heating draw ($0.65\text{ kW}$ per degree below $-20^\circ\text{C}$)
+     - Net required diesel generator dispatch and fuel burn ($0.258\text{ L/kWh}$)
+   - Outputs 24 hourly projections with $P_{10}$ (optimistic) and $P_{90}$ (conservative) confidence envelopes.
+
+4. **Inventory & Fuel Depletion Forecaster (`inventory-forecaster.ts`)**:
+   - Tracks 4 mission-critical commodities: Polar Diesel Fuel, Potable Water, Expedition Rations, and Generator Spares.
+   - Computes:
+     - Days remaining: $\frac{\text{CurrentStock}}{\text{DailyBurnRate}}$
+     - Depletion date
+     - Date of critical 20% survival reserve breach
+     - Dynamic consumption trend (`ACCELERATING` under extreme cold snaps)
+     - Resupply urgency (`ROUTINE`, `ATTENTION`, `URGENT`, `EMERGENCY`) calibrated against the 180-day Antarctic winter resupply gap.
+
+5. **Explainable Asset Health Evaluator (`asset-health-evaluator.ts`)**:
+   - Computes 0–100 health index per asset with transparent penalty attribution:
+     - Telemetry deviation penalty (up to 25 pts)
+     - Anomaly history penalty (up to 30 pts)
+     - Runtime duty cycle penalty (up to 15 pts)
+     - Maintenance penalty (up to 15 pts)
+     - Operating stress penalty (up to 15 pts)
+     - Telemetry freshness/confidence penalty (up to 10 pts)
+   - Prominently labeled with mandatory decision-support disclaimer: *"Decision-support indicator, not a guaranteed failure probability"*.
+
+6. **Cross-Domain Causal Cascade Engine (`cross-domain-risk-engine.ts`)**:
+   - Evaluates multi-domain ripple effects across `INFRASTRUCTURE`, `ENERGY`, `ENVIRONMENT`, and `LOGISTICS`.
+   - Generates directed Causal Chains:
+     $$\text{GEN-01 Thermal Stress} \longrightarrow \text{Engine Efficiency Loss} \longrightarrow \text{Fuel Burn Surge (+22\%)} \longrightarrow \text{Reserve Runway Shortening (-18 Days)} \longrightarrow \text{Logistics Resupply Buffer Risk}$$
+   - Exposes causal nodes, directed links, and contributing root factors.
+
+7. **Advisory Recommendation Engine & Model Observability (`recommendation-engine.ts`, `model-registry.ts`)**:
+   - Generates structured, advisory actions (`INSPECT_ASSET`, `REDUCE_LOAD`, `CHECK_SPARES`, `MONITOR_TREND`, `RUN_SIMULATION`).
+   - Persists execution provenance in `ModelRegistry`: model name, version, task, execution latency ($ms$), confidence, and timestamp.
+
+8. **Operations Command Center UI (`IntelligencePage.tsx`)**:
+   - **Hero Causal Cascade Graph**: High-contrast, interactive node-link cascade diagram with domain color tokens, metric delta chips, and impact links.
+   - **24-Hour Energy Forecast Chart**: SVG line/area visualization with shaded $P_{10}-P_{90}$ envelope, demand curve, and renewable generation lines.
+   - **Inventory Depletion Radar**: Real-time runway countdown, depletion dates, and resupply urgency badges.
+   - **Asset Health Matrix**: 0–100 score gauges with expandable penalty breakdowns.
+   - **Active Anomaly Inspector**: Real-time evidence dossier with deviation, Z-score, rate of change, and threshold crossings.
+   - **Advisory Actions Panel**: Prioritized operator guidance cards.
+   - **Model Observability Ledger**: Live audit table of model executions and latencies.
+
+9. **REST API Endpoints & WebSocket Events**:
+   - `GET /api/stations/:stationId/intelligence`
+   - `GET /api/stations/:stationId/intelligence/anomalies`
+   - `GET /api/stations/:stationId/intelligence/forecasts/energy`
+   - `GET /api/stations/:stationId/intelligence/forecasts/inventory`
+   - `GET /api/stations/:stationId/intelligence/health`
+   - `GET /api/stations/:stationId/intelligence/risk`
+   - `GET /api/stations/:stationId/intelligence/recommendations`
+   - `GET /api/stations/:stationId/intelligence/observability`
+   - `POST /api/stations/:stationId/intelligence/anomalies/evaluate`
+   - WebSocket event: `"intelligence.updated"`.
+
+---
+
+## Next Steps: Phase 6 (Maitri–Bharati Resilience Simulation Engine)
+- Build the simulation engine running against immutable Digital Twin snapshots (`TwinSnapshot`).
+- Support what-if stress scenarios: Generator trip, battery degradation, extreme polar blizzard, and fuel leak.
+- Deterministic impact calculation comparing baseline state vs scenario state across all 4 domains.
+- Provide interactive scenario runner in the Command Center UI.
