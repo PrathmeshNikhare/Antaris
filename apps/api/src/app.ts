@@ -221,7 +221,7 @@ export function createApp(): express.Application {
   app.use("/api/audit", createAuditRouter());
   app.use("/api/twin", createTwinRouter());
   app.use("/api", createAlertsRouter());
-  app.use("/api", createSimulationsRouter());
+  app.use("/api/simulations", createSimulationsRouter());
 
   return app;
 }

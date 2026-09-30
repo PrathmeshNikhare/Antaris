@@ -620,3 +620,102 @@ export interface StationIntelligenceSummary {
   observability: ModelObservabilityRecord[];
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// ── PHASE 6: WHAT-IF RESILIENCE SIMULATION ENGINE TYPES ───────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+export type ResilienceScenarioType =
+  | "GENERATOR_FAILURE"
+  | "BATTERY_DEGRADATION"
+  | "FUEL_SHORTAGE"
+  | "EXTREME_COLD"
+  | "HIGH_WIND"
+  | "LOAD_REDUCTION"
+  | "BACKUP_GEN_ACTIVATION"
+  | "COMMUNICATION_OUTAGE";
+
+export interface SimulationParameters {
+  scenarioType: ResilienceScenarioType;
+  targetAssetId?: string;
+  severity?: "WARNING" | "CRITICAL";
+  durationHours?: number;
+  ambientTempC?: number;
+  windSpeedMs?: number;
+  loadReductionPct?: number;
+  fuelLossLiters?: number;
+  batteryDegradationPct?: number;
+  deterministicSeed?: number | string;
+}
+
+export interface SimulationComparisonItem {
+  metric: string;
+  unit: string;
+  baseline: number | string;
+  scenario: number | string;
+  absoluteChange: number | string;
+  percentageChange: number | string;
+  severity: "CRITICAL" | "WARNING" | "IMPROVEMENT" | "NEUTRAL";
+  reason: string;
+}
+
+export interface ImpactedAssetSummary {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  baselineStatus: string;
+  simulatedStatus: string;
+  baselineHealth: number;
+  simulatedHealth: number;
+  failureCause: string;
+  criticality: string;
+}
+
+export interface BlastRadiusNode {
+  id: string;
+  label: string;
+  domain: "INFRASTRUCTURE" | "ENERGY" | "ENVIRONMENT" | "LOGISTICS" | "LIFE_SUPPORT" | "COMMS";
+  severity: "NORMAL" | "WARNING" | "CRITICAL";
+  status: string;
+  impactDescription: string;
+  metricValue?: string;
+}
+
+export interface BlastRadiusEdge {
+  source: string;
+  target: string;
+  dependencyType: string;
+  impactReason: string;
+}
+
+export interface ResilienceSimulationResult {
+  simulationId: string;
+  stationId: string;
+  scenarioType: ResilienceScenarioType;
+  title: string;
+  label: "SIMULATION"; // Explicit non-measured label
+  modelVersion: string;
+  deterministicSeed: string;
+  createdAt: string;
+  snapshotTimestamp: string;
+  parameters: SimulationParameters;
+  baselineSnapshot: TwinState;
+  scenarioState: TwinState;
+  explanation: string;
+  impactedAssets: ImpactedAssetSummary[];
+  blastRadius: {
+    nodes: BlastRadiusNode[];
+    links: BlastRadiusEdge[];
+  };
+  comparisons: SimulationComparisonItem[];
+  operationalRisk: {
+    score: number;
+    level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    factors: string[];
+  };
+  recoveryState: {
+    suggestedActions: string[];
+    estimatedRecoveryMinutes: number;
+  };
+}
+
+

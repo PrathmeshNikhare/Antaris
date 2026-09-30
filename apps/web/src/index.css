@@ -734,3 +734,148 @@ body {
 .btn--danger:hover {
   background-color: #8c2626;
 }
+
+/* ─── Phase 6: Resilience Simulation Engine ─────────────────────── */
+.sim-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(245, 158, 11, 0.08) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-left: 5px solid var(--critical);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sim-banner__tag {
+  background-color: var(--critical);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sim-scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.sim-scenario-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.sim-scenario-card:hover {
+  border-color: var(--green);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+}
+
+.sim-scenario-card--active {
+  border-color: var(--green);
+  background-color: rgba(20, 107, 74, 0.04);
+  box-shadow: 0 0 0 2px var(--green);
+}
+
+.sim-scenario-card__category {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.sim-scenario-card__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+  line-height: 1.3;
+}
+
+.sim-scenario-card__desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.sim-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.sim-matrix-table th {
+  background-color: var(--surface-soft);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sim-matrix-table td {
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.sim-matrix-table tr:hover {
+  background-color: var(--surface-soft);
+}
+
+.sim-blast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.sim-blast-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  box-shadow: var(--shadow-subtle);
+  border-left-width: 4px;
+}
+
+.sim-blast-card--critical {
+  border-left-color: var(--critical);
+}
+
+.sim-blast-card--warning {
+  border-left-color: var(--warning);
+}
+
+.sim-blast-card--normal {
+  border-left-color: var(--green);
+}
+
+.badge--improvement {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge--info {
+  background-color: var(--info-soft);
+  color: var(--info);
+}

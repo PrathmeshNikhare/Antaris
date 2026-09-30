@@ -291,8 +291,48 @@ Operator selects "GEN-01 Overheat & Trip" in TopBar Demo Scenario dropdown
 
 ---
 
-## Next Steps: Phase 6 (Maitri–Bharati Resilience Simulation Engine)
-- Build the simulation engine running against immutable Digital Twin snapshots (`TwinSnapshot`).
-- Support what-if stress scenarios: Generator trip, battery degradation, extreme polar blizzard, and fuel leak.
-- Deterministic impact calculation comparing baseline state vs scenario state across all 4 domains.
-- Provide interactive scenario runner in the Command Center UI.
+### Phase 6: What-If Resilience Simulation Engine
+1. **Core Invariant: Baseline Digital Twin Immutability**:
+   - `ResilienceSimulationEngine` operates strictly on an immutable `TwinState` snapshot (`JSON.parse(JSON.stringify(liveState))`).
+   - The live Digital Twin registry state is 100% unmutated before, during, and after any counterfactual simulation.
+2. **8 Supported Counterfactual Scenarios**:
+   - `GENERATOR_FAILURE`: Primary Generator Trip & Rapid Battery Discharge Cascade (downstream trace heating loss & water intake freeze risk).
+   - `BATTERY_DEGRADATION`: Sub-Zero Battery Degradation (cell internal resistance surge and microgrid buffer derating).
+   - `FUEL_SHORTAGE`: Polar Diesel Storage Shortage (45-day winter emergency survival window breach).
+   - `EXTREME_COLD`: Polar Chill Vortex at -45°C (building thermal envelope conduction surge & generator heating load spike).
+   - `HIGH_WIND`: Category 5 Antarctic Blizzard >48 m/s (turbines feathered & disk-braked, solar arrays snow-blinded, outdoor red lockdown).
+   - `LOAD_REDUCTION`: Demand Response & Load Shedding (curtailing non-essential science loads expanding generator margin).
+   - `BACKUP_GEN_ACTIVATION`: Standby Generator Synchronization (dual-source N+1 electrical redundancy secured).
+   - `COMMUNICATION_OUTAGE`: Satellite Blackout & Edge Store-and-Forward (space weather fade activating autonomous SSD queue).
+3. **Dependency-Aware Downstream Blast-Radius**:
+   - Utilizes `TwinDependencyGraph` recursive downstream traversal to calculate all affected physical equipment.
+   - Generates node graph items with domain classifications (`INFRASTRUCTURE`, `ENERGY`, `LIFE_SUPPORT`, `LOGISTICS`, `COMMS`), status badges, and delta metric indicators.
+   - Explicit dependency edge vectors (`source` -> `dependencyType` -> `target`) with causality rationales.
+4. **Baseline vs. Counterfactual Comparison Matrix**:
+   - Deterministic delta table showing Metric, Baseline (Live Twin), Simulated Scenario, Absolute Change, Percentage Change, Severity, and Causal Rationale.
+5. **Causal Narrative Dossier & Mitigation Protocol**:
+   - Plain-language physics explanation detailing thermodynamic, mechanical, and electrical transfers.
+   - Numbered, actionable operational procedures with estimated recovery duration in minutes.
+6. **Simulation History & Persistence (`SimulationStore`)**:
+   - In-memory historical repository with station filtering and unique IDs (`sim-<timestamp>-<seed>`).
+   - Every simulation result object carries the mandatory explicit `"SIMULATION"` non-measured label.
+7. **Interactive Command Center UI (`SimulationsPage.tsx`)**:
+   - Two sub-tabs: "What-If Resilience Engine" (Phase 6) and "Comms & Anomaly Sandbox" (Phase 2).
+   - Top banner with prominent `[SIMULATION]` non-measured warning.
+   - 8-scenario interactive card grid with parameter sliders (duration, severity, temperature, wind speed, load reduction, fuel loss, battery degradation).
+   - Live comparison table, blast-radius node flow, causal narrative, recovery protocol checklist, and history selector.
+8. **REST API Endpoints**:
+   - `GET /api/simulations/scenarios/supported`: Metadata for all 8 scenarios.
+   - `POST /api/simulations`: Executes scenario with custom parameters.
+   - `GET /api/simulations`: Lists historical simulations.
+   - `GET /api/simulations/:simulationId`: Retrieves specific run by ID.
+9. **Automated Acceptance Tests**:
+   - `apps/api/src/__tests__/phase6.test.ts`: 15 unit/integration tests verifying immutability, all 8 scenarios, determinism, blast-radius, and REST endpoints.
+   - `apps/web/src/__tests__/SimulationsPage.test.tsx`: 7 component tests verifying UI rendering, scenario cards, comparison matrix, blast radius, and tab switching.
+
+---
+
+## Next Steps: Phase 7 (Local Operations Copilot)
+- Local Ollama-compatible Operations Copilot.
+- Strictly acts as a reasoning and explanation layer, grounded in the Digital Twin state, Intelligence, and Simulation outputs.
+- Grounded operator Q&A, alert explanations, recovery runbooks, and audit logging.

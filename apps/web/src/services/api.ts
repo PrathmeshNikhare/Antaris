@@ -6,6 +6,9 @@ import type {
   MaintenanceEvent,
   AuditEvent,
   StationIntelligenceSummary,
+  ResilienceSimulationResult,
+  ResilienceScenarioType,
+  SimulationParameters,
 } from "@maitri-bharati/shared";
 
 const API_BASE = "http://localhost:3001/api";
@@ -139,5 +142,42 @@ export const twinApi = {
   async getTelemetryHistory(stationId: string, metric = "power_output_kw", limit = 48): Promise<any[]> {
     const res = await fetch(`${API_BASE}/telemetry?stationId=${stationId}&metric=${metric}&limit=${limit}`);
     return handleResponse<any[]>(res);
+  },
+
+  async getSupportedScenarios(): Promise<
+    Array<{
+      type: ResilienceScenarioType;
+      title: string;
+      category: string;
+      description: string;
+      defaultParams: Record<string, any>;
+    }>
+  > {
+    const res = await fetch(`${API_BASE}/simulations/scenarios/supported`);
+    return handleResponse<any>(res);
+  },
+
+  async runResilienceSimulation(
+    stationId: string,
+    scenarioType: ResilienceScenarioType,
+    parameters?: Partial<SimulationParameters>
+  ): Promise<ResilienceSimulationResult> {
+    const res = await fetch(`${API_BASE}/simulations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stationId, scenarioType, parameters }),
+    });
+    return handleResponse<ResilienceSimulationResult>(res);
+  },
+
+  async getSimulations(stationId?: string, limit = 20): Promise<ResilienceSimulationResult[]> {
+    const query = stationId ? `?stationId=${stationId}&limit=${limit}` : `?limit=${limit}`;
+    const res = await fetch(`${API_BASE}/simulations${query}`);
+    return handleResponse<ResilienceSimulationResult[]>(res);
+  },
+
+  async getSimulationById(simulationId: string): Promise<ResilienceSimulationResult> {
+    const res = await fetch(`${API_BASE}/simulations/${simulationId}`);
+    return handleResponse<ResilienceSimulationResult>(res);
   },
 };

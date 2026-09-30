@@ -3,9 +3,6 @@ import { useStation } from "../../hooks/useStation";
 import { twinApi } from "../../services/api";
 import type {
   StationIntelligenceSummary,
-  AnomalyResult,
-  CrossDomainCascade,
-  AssetHealthScore,
 } from "@maitri-bharati/shared";
 
 export function IntelligencePage(): React.JSX.Element {
