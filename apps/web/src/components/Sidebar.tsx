@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 
 interface NavItem {
   to: string;
@@ -8,7 +8,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/", label: "Overview", icon: "⊞" },
+  { to: "/overview", label: "Overview", icon: "⊞" },
   { to: "/twin", label: "Digital Twin", icon: "❖" },
   { to: "/alerts", label: "Alerts & Incidents", icon: "🚨" },
   { to: "/sensors", label: "Sensors", icon: "📡" },
@@ -29,13 +29,13 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar(): React.JSX.Element {
   return (
     <aside className="app-sidebar">
-      <div className="app-sidebar__brand">
+      <Link to="/" style={{ textDecoration: "none", color: "inherit" }} className="app-sidebar__brand" title="Return to Polarix Gateway Portal">
         <div className="app-sidebar__logo-icon">MB</div>
         <div className="app-sidebar__brand-text">
           <span className="app-sidebar__title">Maitri–Bharati</span>
           <span className="app-sidebar__sub">Antarctic Twin</span>
         </div>
-      </div>
+      </Link>
 
       <nav>
         <ul className="app-sidebar__nav">

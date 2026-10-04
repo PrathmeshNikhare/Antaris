@@ -24,6 +24,8 @@ import { SensorsPage } from "./features/sensors/SensorsPage";
 import { EventsPage } from "./features/events/EventsPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 
+import { PolarixLandingPage } from "./features/landing/PolarixLandingPage";
+
 function AppLayout(): React.JSX.Element {
   return (
     <ProtectedRoute>
@@ -33,8 +35,8 @@ function AppLayout(): React.JSX.Element {
           <TopBar />
           <main>
             <Routes>
-              <Route path="/" element={<OverviewPage />} />
-              <Route path="/overview" element={<Navigate to="/" replace />} />
+              <Route path="/" element={<Navigate to="/overview" replace />} />
+              <Route path="/overview" element={<OverviewPage />} />
               <Route path="/twin" element={<DigitalTwinPage />} />
               <Route path="/alerts" element={<AlertsPage />} />
               <Route path="/sensors" element={<SensorsPage />} />
@@ -78,6 +80,9 @@ export default function App(): React.JSX.Element {
       <AuthProvider>
         <StationProvider>
           <Routes>
+            <Route path="/" element={<PolarixLandingPage />} />
+            <Route path="/landing" element={<Navigate to="/" replace />} />
+            <Route path="/portal" element={<Navigate to="/" replace />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/*" element={<AppLayout />} />
           </Routes>

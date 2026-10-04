@@ -161,6 +161,7 @@ describe("App Command Center Shell", () => {
       }
     }
     (globalThis as any).WebSocket = MockWebSocket;
+    window.history.pushState({}, "", "/overview");
   });
 
   it("renders the sidebar brand and title", async () => {
@@ -201,5 +202,17 @@ describe("App Command Center Shell", () => {
     });
     expect(screen.getByText(/Energy Generation & Load/i)).toBeInTheDocument();
     expect(screen.getByText(/Logistics Autonomy/i)).toBeInTheDocument();
+  });
+
+  it("renders the POLARIX Landing Gateway at root route /", async () => {
+    window.history.pushState({}, "", "/");
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByText("POLARIX")).toBeInTheDocument();
+      expect(screen.getByText("ANTARCTIC DIGITAL TWIN")).toBeInTheDocument();
+      expect(screen.getByText(/ENTER MISSION CONTROL/i)).toBeInTheDocument();
+      expect(screen.getByText(/EXPLORE DIGITAL TWIN/i)).toBeInTheDocument();
+      expect(screen.getByText(/STATION TELEMETRY TERMINAL/i)).toBeInTheDocument();
+    });
   });
 });

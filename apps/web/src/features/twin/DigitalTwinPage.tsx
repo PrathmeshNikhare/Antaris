@@ -7,7 +7,14 @@ import { Station3DCanvas, type TwinVisualMode } from "./Station3DCanvas";
 
 export function DigitalTwinPage(): React.JSX.Element {
   const navigate = useNavigate();
-  const { stationId, twinState, loading } = useStation();
+  const {
+    stationId,
+    setStationId,
+    twinState,
+    loading,
+    triggerAnomaly,
+    changeConnectivity,
+  } = useStation();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [impactData, setImpactData] = useState<DownstreamImpactResponse | null>(null);
 
@@ -258,8 +265,15 @@ export function DigitalTwinPage(): React.JSX.Element {
         </div>
       )}
 
-      {/* Main 2-column layout: Canvas + Inspector */}
-      <div className="twin-container" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1rem" }}>
+      {/* Main layout: In 3D mode, the canvas is full width with HUD overlays and slide-out console. In 2D mode, shows 2-column blueprint + inspector */}
+      <div
+        className="twin-container"
+        style={{
+          display: "grid",
+          gridTemplateColumns: viewFormat === "3D" ? "1fr" : "1fr 340px",
+          gap: "1rem",
+        }}
+      >
         {/* Left: 3D WebGL Canvas or 2D Blueprint Fallback */}
         <div
           className="station-canvas"
@@ -270,19 +284,32 @@ export function DigitalTwinPage(): React.JSX.Element {
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
+            padding: 0,
           }}
         >
           {viewFormat === "3D" ? (
-            <div style={{ flex: 1, minHeight: "520px", position: "relative" }}>
+            <div style={{ flex: 1, minHeight: "720px", height: "760px", position: "relative" }}>
               <Station3DCanvas
                 stationId={stationId}
                 twinState={twinState}
                 selectedAssetId={activeAssetId}
                 onSelectAsset={(id) => setSelectedAssetId(id)}
                 visualMode={visualMode}
+                onVisualModeChange={(m) => setVisualMode(m)}
                 isDaytime={isDaytime}
                 replayStep={replayStep}
                 windSpeedMs={windSpeed}
+                onAskTwin={handleAskTwin}
+                onTriggerTest={(testKey) => {
+                  const isMaitri = stationId === "station-maitri";
+                  if (testKey === "T1: NORMAL") void triggerAnomaly("NORMAL");
+                  else if (testKey === "T2: WARNING") void triggerAnomaly("COOLANT_SPIKE");
+                  else if (testKey === "T3: CRITICAL") void triggerAnomaly("GENERATOR_OVERHEAT");
+                  else if (testKey === "T4: OFFLINE") void changeConnectivity("OFFLINE");
+                  else if (testKey === "T5: RECOVERY") void changeConnectivity("RECOVERY");
+                  else if (testKey === "T6: SELECT SENSOR") setSelectedAssetId(isMaitri ? "asset-maitri-gen-1" : "asset-bharati-chp-1");
+                  else if (testKey === "T7: SWITCH STATION") setStationId(isMaitri ? "station-bharati" : "station-maitri");
+                }}
               />
             </div>
           ) : (
@@ -396,8 +423,9 @@ export function DigitalTwinPage(): React.JSX.Element {
           )}
         </div>
 
-        {/* Right: Asset Inspector Panel + Ask the Twin */}
-        <aside className="inspector-panel" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {/* Right: Asset Inspector Panel + Ask the Twin (Shown in 2D Blueprint Mode) */}
+        {viewFormat === "2D" && (
+          <aside className="inspector-panel" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {selectedAsset ? (
             <div
               style={{
@@ -597,6 +625,7 @@ export function DigitalTwinPage(): React.JSX.Element {
             </div>
           )}
         </aside>
+        )}
       </div>
     </div>
   );

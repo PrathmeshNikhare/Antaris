@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useStation } from "../hooks/useStation";
 import { useAuth } from "../context/AuthContext";
 import { JudgeModeModal } from "./JudgeModeModal";
 
 export function TopBar(): React.JSX.Element {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [judgeModeOpen, setJudgeModeOpen] = useState(false);
   const {
@@ -189,6 +191,23 @@ export function TopBar(): React.JSX.Element {
               >
                 👤 {user.username} <small style={{ color: "var(--green)", fontWeight: 700 }}>[{user.role}]</small>
               </span>
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                style={{
+                  background: "rgba(56, 189, 248, 0.08)",
+                  border: "1px solid rgba(56, 189, 248, 0.3)",
+                  borderRadius: "4px",
+                  padding: "0.25rem 0.55rem",
+                  fontSize: "0.75rem",
+                  color: "#0284c7",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                title="Return to Polarix Gateway Landing Portal"
+              >
+                🌐 Portal
+              </button>
               <button
                 type="button"
                 onClick={() => void logout()}
