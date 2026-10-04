@@ -69,7 +69,7 @@ export function AuditPage(): React.JSX.Element {
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">📋 Operator Actions & System Audit Log</h2>
+          <h2 className="card-title">Operator Actions & System Audit Log</h2>
           <span className="card-subtitle">Cryptographically verifiable sequence trail</span>
         </div>
 

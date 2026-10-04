@@ -108,7 +108,6 @@ export function TopBar(): React.JSX.Element {
             title="Open interactive 18-step SIH Judge Demonstration Walkthrough"
             id="btn-open-judge-mode"
           >
-            <span>🎯</span>
             <span>Judge Mode</span>
           </button>
 
@@ -152,15 +151,15 @@ export function TopBar(): React.JSX.Element {
                 title="Inject deterministic failure cascade into Digital Twin"
               >
                 <option value="" disabled>
-                  ⚡ Inject Scenario...
+                  Inject Scenario...
                 </option>
-                <option value="NORMAL">✓ Nominal Conditions</option>
-                <option value="GENERATOR_OVERHEAT">🔥 GEN-01 Overheat & Trip (Cascade)</option>
-                <option value="COMMUNICATION_LOSS">📡 Satellite Link Severed</option>
-                <option value="BATTERY_DISCHARGE">🔋 Battery ESS Rapid Discharge</option>
-                <option value="HVAC_LOAD_SPIKE">❄️ HVAC Thermal Load Spike</option>
-                <option value="FUEL_CONSUMPTION_SPIKE">⛽ Fuel Leak / Burn Rate Spike</option>
-                <option value="ENVIRONMENTAL_EXTREME">🌪️ Katabatic Blizzard (140 km/h)</option>
+                <option value="NORMAL">Nominal Conditions</option>
+                <option value="GENERATOR_OVERHEAT">GEN-01 Overheat & Trip (Cascade)</option>
+                <option value="COMMUNICATION_LOSS">Satellite Link Severed</option>
+                <option value="BATTERY_DISCHARGE">Battery ESS Rapid Discharge</option>
+                <option value="HVAC_LOAD_SPIKE">HVAC Thermal Load Spike</option>
+                <option value="FUEL_CONSUMPTION_SPIKE">Fuel Leak / Burn Rate Spike</option>
+                <option value="ENVIRONMENTAL_EXTREME">Katabatic Blizzard (140 km/h)</option>
               </select>
             </div>
           )}
@@ -189,7 +188,7 @@ export function TopBar(): React.JSX.Element {
                 }}
                 title={`Logged in as ${user.username} (${user.role})`}
               >
-                👤 {user.username} <small style={{ color: "var(--green)", fontWeight: 700 }}>[{user.role}]</small>
+                {user.username} <small style={{ color: "var(--green)", fontWeight: 700 }}>[{user.role}]</small>
               </span>
               <button
                 type="button"
@@ -204,9 +203,9 @@ export function TopBar(): React.JSX.Element {
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
-                title="Return to Polarix Gateway Landing Portal"
+                title="Return to Antaris Gateway Landing Portal"
               >
-                🌐 Portal
+                Portal
               </button>
               <button
                 type="button"

@@ -176,7 +176,7 @@ export function AlertsPage(): React.JSX.Element {
               })
             }
           >
-            🛡️ Storm Lockdown
+            Storm Lockdown
           </button>
           <button
             type="button"
@@ -191,7 +191,7 @@ export function AlertsPage(): React.JSX.Element {
               })
             }
           >
-            ⚡ Load Shedding
+            Load Shedding
           </button>
           <button
             type="button"
@@ -527,7 +527,7 @@ export function AlertsPage(): React.JSX.Element {
                 }}
               >
                 <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: "0.4rem" }}>
-                  🔍 Anomaly Evidence & Telemetry Observation:
+                  Anomaly Evidence & Telemetry Observation:
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                   <div>
@@ -561,7 +561,7 @@ export function AlertsPage(): React.JSX.Element {
                 }}
               >
                 <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.5rem" }}>
-                  ⛓️ Root-Cause & Cascade Impact Chain:
+                  Root-Cause & Cascade Impact Chain:
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.75rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -591,7 +591,7 @@ export function AlertsPage(): React.JSX.Element {
                     style={{ flex: 1, padding: "0.5rem", fontSize: "0.8rem" }}
                     onClick={() => handleLocateInTwin(selectedAlert.assetId)}
                   >
-                    📍 Locate in 3D Digital Twin
+                    Locate in 3D Digital Twin
                   </button>
 
                   {selectedAlert.status === "OPEN" && (
@@ -637,7 +637,7 @@ export function AlertsPage(): React.JSX.Element {
                     )
                   }
                 >
-                  🧪 Test What-If Scenario with this Failure →
+                  Test What-If Scenario with this Failure →
                 </button>
               </div>
             </>
@@ -675,7 +675,7 @@ export function AlertsPage(): React.JSX.Element {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
               <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0, color: "var(--text)" }}>
-                ⚠️ Propose Simulated Policy: {proposalModal.title}
+                Propose Simulated Policy: {proposalModal.title}
               </h3>
               <button
                 type="button"

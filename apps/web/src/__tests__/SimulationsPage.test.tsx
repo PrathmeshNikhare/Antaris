@@ -196,8 +196,8 @@ describe("Phase 6: SimulationsPage Web Feature", () => {
     expect(screen.getAllByText(/SIMULATION/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/COUNTERFACTUAL PROJECTION MODE/i)).toBeInTheDocument();
 
-    expect(screen.getByText(/⚡ What-If Resilience Engine/i)).toBeInTheDocument();
-    expect(screen.getByText(/📡 Comms & Anomaly Sandbox/i)).toBeInTheDocument();
+    expect(screen.getByText(/What-If Resilience Engine/i)).toBeInTheDocument();
+    expect(screen.getByText(/Comms & Anomaly Sandbox/i)).toBeInTheDocument();
   });
 
   it("renders all 8 counterfactual scenario selection cards", async () => {
@@ -295,7 +295,7 @@ describe("Phase 6: SimulationsPage Web Feature", () => {
   it("switches to Phase 2 Comms & Telemetry Sandbox tab and restores nominal conditions", async () => {
     renderComponent();
 
-    const sandboxTab = screen.getByText(/📡 Comms & Anomaly Sandbox/i);
+    const sandboxTab = screen.getByText(/Comms & Anomaly Sandbox/i);
     fireEvent.click(sandboxTab);
 
     expect(screen.getByText(/Satellite Link Connectivity Simulation/i)).toBeInTheDocument();

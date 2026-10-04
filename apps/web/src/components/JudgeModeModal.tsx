@@ -405,7 +405,6 @@ export function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps): React.
         }}
         onClick={() => setIsMinimized(false)}
       >
-        <span style={{ fontSize: "1.1rem" }}>🎯</span>
         <div>
           <div style={{ fontSize: "0.78rem", fontWeight: 700 }}>
             Judge Mode: Step {currentStep.step} / {JUDGE_STEPS.length}
@@ -477,7 +476,6 @@ export function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps): React.
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <span style={{ fontSize: "1.4rem" }}>🎯</span>
             <div>
               <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
                 SIH26060 Evaluator & Judge Mode Guide
@@ -613,7 +611,7 @@ export function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps): React.
                 gap: "0.4rem",
               }}
             >
-              <span>{isExecuting ? "Executing…" : "⚡"}</span>
+              {isExecuting && <span>Executing… </span>}
               <span>{currentStep.actionLabel || `Go to Step ${currentStep.step}`}</span>
             </button>
           </div>
@@ -621,7 +619,7 @@ export function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps): React.
           {/* What Judges Look For */}
           <div className="card" style={{ border: "1px solid var(--border)", padding: "1rem", margin: 0 }}>
             <div style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: "0.5rem", color: "var(--text)" }}>
-              🎯 What Makes Our System Stand Out (Judge Talking Points):
+              What Makes Our System Stand Out (Judge Talking Points):
             </div>
             <ul style={{ margin: 0, paddingLeft: "1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               {currentStep.judgingHighlights.map((pt, idx) => (

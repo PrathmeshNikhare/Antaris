@@ -180,7 +180,7 @@ export function DecisionTracePanel({ stationId }: DecisionTracePanelProps): Reac
                   {selectedTrace.recommendation}
                 </div>
                 <div style={{ fontSize: "0.75rem", color: "var(--green)", marginTop: "0.3rem", fontWeight: 600 }}>
-                  👉 Action Taken: {selectedTrace.operatorActionTaken || "Pending operator assessment"}
+                  Action Taken: {selectedTrace.operatorActionTaken || "Pending operator assessment"}
                 </div>
                 {selectedTrace.auditRefId && (
                   <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>

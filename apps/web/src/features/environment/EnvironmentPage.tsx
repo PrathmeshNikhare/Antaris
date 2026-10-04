@@ -68,7 +68,7 @@ export function EnvironmentPage(): React.JSX.Element {
       <div className="grid-2">
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">🌪️ Katabatic Wind & Blizzard Warning Matrix</h2>
+            <h2 className="card-title">Katabatic Wind & Blizzard Warning Matrix</h2>
             <span className="card-subtitle">Local microclimate risk thresholds</span>
           </div>
 
@@ -115,7 +115,7 @@ export function EnvironmentPage(): React.JSX.Element {
 
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">🧭 Geographical Coordinates & Climate Profile</h2>
+            <h2 className="card-title">Geographical Coordinates & Climate Profile</h2>
             <span className="card-subtitle">Permanent station parameters</span>
           </div>
 

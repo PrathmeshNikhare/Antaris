@@ -117,7 +117,7 @@ export function ResilienceIndexCard({ stationId, compact = false }: ResilienceIn
             gap: "0.5rem",
           }}
         >
-          <span style={{ color: "var(--critical)", fontWeight: 700 }}>⚠️ Top Degradation Drivers:</span>
+          <span style={{ color: "var(--critical)", fontWeight: 700 }}>Top Degradation Drivers:</span>
           <span style={{ color: "var(--text)" }}>{indexData.topDegradationDrivers.join(" • ")}</span>
         </div>
       )}

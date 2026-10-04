@@ -256,8 +256,8 @@ export function LoginPage(): React.JSX.Element {
               justifyContent: "space-between",
             }}
           >
-            <span>🔒 HTTP-Only Cookie Session</span>
-            <span>🛡️ Scrypt Hash Verified</span>
+            <span>HTTP-Only Cookie Session</span>
+            <span>Scrypt Hash Verified</span>
           </div>
         </div>
 

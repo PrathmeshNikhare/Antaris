@@ -204,11 +204,11 @@ describe("App Command Center Shell", () => {
     expect(screen.getByText(/Logistics Autonomy/i)).toBeInTheDocument();
   });
 
-  it("renders the POLARIX Landing Gateway at root route /", async () => {
+  it("renders the ANTARIS Landing Gateway at root route /", async () => {
     window.history.pushState({}, "", "/");
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText("POLARIX")).toBeInTheDocument();
+      expect(screen.getByText("ANTARIS")).toBeInTheDocument();
       expect(screen.getByText("ANTARCTIC DIGITAL TWIN")).toBeInTheDocument();
       expect(screen.getByText(/ENTER MISSION CONTROL/i)).toBeInTheDocument();
       expect(screen.getByText(/EXPLORE DIGITAL TWIN/i)).toBeInTheDocument();

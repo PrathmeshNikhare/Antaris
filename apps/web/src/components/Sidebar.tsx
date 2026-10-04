@@ -4,32 +4,31 @@ import { NavLink, Link } from "react-router-dom";
 interface NavItem {
   to: string;
   label: string;
-  icon: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/overview", label: "Overview", icon: "⊞" },
-  { to: "/twin", label: "Digital Twin", icon: "❖" },
-  { to: "/alerts", label: "Alerts & Incidents", icon: "🚨" },
-  { to: "/sensors", label: "Sensors", icon: "📡" },
-  { to: "/events", label: "Mission Events", icon: "📜" },
-  { to: "/infrastructure", label: "Infrastructure", icon: "⚙" },
-  { to: "/energy", label: "Energy Grid", icon: "⚡" },
-  { to: "/logistics", label: "Logistics", icon: "📦" },
-  { to: "/environment", label: "Environment", icon: "❄" },
-  { to: "/intelligence", label: "Intelligence", icon: "◈" },
-  { to: "/simulations", label: "Simulations", icon: "▷" },
-  { to: "/copilot", label: "Ops Copilot", icon: "🤖" },
-  { to: "/reports", label: "Snapshots & Reports", icon: "▤" },
-  { to: "/audit", label: "Audit Log", icon: "📋" },
-  { to: "/settings", label: "Mission Settings", icon: "🔧" },
-  { to: "/demo", label: "Demo Control", icon: "🎮" },
+  { to: "/overview", label: "Overview" },
+  { to: "/twin", label: "Digital Twin" },
+  { to: "/alerts", label: "Alerts & Incidents" },
+  { to: "/sensors", label: "Sensors" },
+  { to: "/events", label: "Mission Events" },
+  { to: "/infrastructure", label: "Infrastructure" },
+  { to: "/energy", label: "Energy Grid" },
+  { to: "/logistics", label: "Logistics" },
+  { to: "/environment", label: "Environment" },
+  { to: "/intelligence", label: "Intelligence" },
+  { to: "/simulations", label: "Simulations" },
+  { to: "/copilot", label: "Ops Copilot" },
+  { to: "/reports", label: "Snapshots & Reports" },
+  { to: "/audit", label: "Audit Log" },
+  { to: "/settings", label: "Mission Settings" },
+  { to: "/demo", label: "Demo Control" },
 ];
 
 export function Sidebar(): React.JSX.Element {
   return (
     <aside className="app-sidebar">
-      <Link to="/" style={{ textDecoration: "none", color: "inherit" }} className="app-sidebar__brand" title="Return to Polarix Gateway Portal">
+      <Link to="/" style={{ textDecoration: "none", color: "inherit" }} className="app-sidebar__brand" title="Return to Antaris Gateway Portal">
         <div className="app-sidebar__logo-icon">MB</div>
         <div className="app-sidebar__brand-text">
           <span className="app-sidebar__title">Maitri–Bharati</span>
@@ -48,7 +47,6 @@ export function Sidebar(): React.JSX.Element {
                   `app-sidebar__link ${isActive ? "app-sidebar__link--active" : ""}`
                 }
               >
-                <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>{item.icon}</span>
                 <span>{item.label}</span>
               </NavLink>
             </li>

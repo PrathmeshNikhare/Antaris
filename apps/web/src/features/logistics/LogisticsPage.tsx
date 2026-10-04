@@ -262,7 +262,7 @@ export function LogisticsPage(): React.JSX.Element {
           style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}
           onClick={() => setActiveTab("INVENTORY")}
         >
-          📦 Database Inventory Ledger
+          Database Inventory Ledger
         </button>
         <button
           type="button"
@@ -270,7 +270,7 @@ export function LogisticsPage(): React.JSX.Element {
           style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}
           onClick={() => setActiveTab("REQUISITIONS")}
         >
-          📝 Requisitions & Cargo Manifest ({requisitions.length})
+          Requisitions & Cargo Manifest ({requisitions.length})
         </button>
         <button
           type="button"
@@ -278,7 +278,7 @@ export function LogisticsPage(): React.JSX.Element {
           style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}
           onClick={() => setActiveTab("OPTIMIZER")}
         >
-          ⚙️ Resupply Optimizer (Section 11)
+          Resupply Optimizer (Section 11)
         </button>
         <button
           type="button"
@@ -286,7 +286,7 @@ export function LogisticsPage(): React.JSX.Element {
           style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}
           onClick={() => setActiveTab("MISSION_WINDOWS")}
         >
-          🧭 Mission Window Planner (Section 12)
+          Mission Window Planner (Section 12)
         </button>
         <button
           type="button"
@@ -294,7 +294,7 @@ export function LogisticsPage(): React.JSX.Element {
           style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}
           onClick={() => setActiveTab("TRANSACTIONS")}
         >
-          📑 Audit History Ledgers
+          Audit History Ledgers
         </button>
       </div>
 
@@ -393,7 +393,7 @@ export function LogisticsPage(): React.JSX.Element {
           {/* Incoming Cargo Sortie Overview */}
           <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", padding: "1rem" }}>
             <div style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: "0.75rem", color: "var(--text)" }}>
-              🚢 Incoming Polar Cargo Missions ({missions.length})
+              Incoming Polar Cargo Missions ({missions.length})
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
               {missions.map((m) => (
@@ -626,7 +626,7 @@ export function LogisticsPage(): React.JSX.Element {
 
                 {/* Assumptions Inspector */}
                 <div style={{ background: "var(--surface-soft)", padding: "0.75rem", borderRadius: "6px", fontSize: "0.75rem" }}>
-                  <div style={{ fontWeight: 700, marginBottom: "0.3rem" }}>📋 Explicit Optimization Assumptions:</div>
+                  <div style={{ fontWeight: 700, marginBottom: "0.3rem" }}>Explicit Optimization Assumptions:</div>
                   <ul style={{ margin: 0, paddingLeft: "1.2rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
                     {(optimization.assumptions || []).map((asm: string, idx: number) => (
                       <li key={idx}>{asm}</li>
@@ -900,7 +900,7 @@ export function LogisticsPage(): React.JSX.Element {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text)" }}>
-                📝 Create Resupply Requisition
+                Create Resupply Requisition
               </h3>
               <button
                 type="button"

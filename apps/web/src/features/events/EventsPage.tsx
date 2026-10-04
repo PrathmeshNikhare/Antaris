@@ -264,7 +264,7 @@ export function EventsPage(): React.JSX.Element {
                       style={{ fontSize: "0.75rem", border: "1px solid var(--border)" }}
                       onClick={() => navigate(`/twin?assetId=${evt.assetId}`)}
                     >
-                      📍 Locate in Twin
+                      Locate in Twin
                     </button>
                   ) : (
                     <button
@@ -273,7 +273,7 @@ export function EventsPage(): React.JSX.Element {
                       style={{ fontSize: "0.75rem", border: "1px solid var(--border)" }}
                       onClick={() => navigate("/twin")}
                     >
-                      📍 Station Overview
+                      Station Overview
                     </button>
                   )}
                 </div>

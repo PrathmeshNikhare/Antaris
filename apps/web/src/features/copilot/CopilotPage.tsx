@@ -15,12 +15,12 @@ interface ChatMessage {
 
 // ── Suggested prompts for new users ──────────────────────────────────
 const SUGGESTED_PROMPTS = [
-  { icon: "📡", text: "What is happening at Maitri?", category: "Overview" },
-  { icon: "⚡", text: "Why is GEN-01 at risk?", category: "Asset" },
-  { icon: "🔗", text: "What assets are affected if GEN-01 fails?", category: "Impact" },
-  { icon: "⛽", text: "How long will current fuel last?", category: "Logistics" },
-  { icon: "❄️", text: "What if we lose GEN-01 for 90 minutes?", category: "Simulation" },
-  { icon: "📊", text: "Why is energy risk increasing?", category: "Analysis" },
+  { text: "What is happening at Maitri?", category: "Overview" },
+  { text: "Why is GEN-01 at risk?", category: "Asset" },
+  { text: "What assets are affected if GEN-01 fails?", category: "Impact" },
+  { text: "How long will current fuel last?", category: "Logistics" },
+  { text: "What if we lose GEN-01 for 90 minutes?", category: "Simulation" },
+  { text: "Why is energy risk increasing?", category: "Analysis" },
 ];
 
 export function CopilotPage(): React.JSX.Element {
@@ -290,7 +290,6 @@ export function CopilotPage(): React.JSX.Element {
                   onClick={() => sendMessage(prompt.text)}
                   disabled={isLoading}
                 >
-                  <span className="copilot-suggestion-icon">{prompt.icon}</span>
                   <span className="copilot-suggestion-text">{prompt.text}</span>
                   <span className="copilot-suggestion-category">{prompt.category}</span>
                 </button>
@@ -305,7 +304,7 @@ export function CopilotPage(): React.JSX.Element {
                 className={`copilot-message copilot-message--${msg.role}`}
               >
                 <div className="copilot-message-avatar">
-                  {msg.role === "user" ? "👤" : "◈"}
+                  {msg.role === "user" ? "USR" : "◈"}
                 </div>
                 <div className="copilot-message-body">
                   <div className="copilot-message-content">
@@ -316,7 +315,7 @@ export function CopilotPage(): React.JSX.Element {
                   {msg.toolCalls && msg.toolCalls.length > 0 && (
                     <div className="copilot-tool-traces">
                       <div className="copilot-tool-traces-header">
-                        <span>🔧 Tool Calls ({msg.toolCalls.length})</span>
+                        <span>Tool Calls ({msg.toolCalls.length})</span>
                       </div>
                       {msg.toolCalls.map((trace, idx) =>
                         renderToolTrace(trace, idx, msg.id)
@@ -386,7 +385,7 @@ export function CopilotPage(): React.JSX.Element {
             disabled={isLoading || !inputValue.trim()}
             title="Send message (Enter)"
           >
-            {isLoading ? "⏳" : "➤"}
+            {isLoading ? "..." : "➤"}
           </button>
         </div>
         <div className="copilot-input-footer">

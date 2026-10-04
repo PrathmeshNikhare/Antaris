@@ -110,7 +110,7 @@ export function DigitalTwinPage(): React.JSX.Element {
             </span>
           </div>
           <h1 className="page-header__title">
-            {stationId === "station-maitri" ? "🇮🇳 Maitri Station" : "🇮🇳 Bharati Station"} 3D Digital Twin
+            {stationId === "station-maitri" ? "Maitri Station" : "Bharati Station"} 3D Digital Twin
           </h1>
           <p className="page-header__subtitle">
             Interactive WebGL physical telemetry twin with multi-mode x-ray, dependency topology, and downstream impact tracking.
@@ -126,7 +126,7 @@ export function DigitalTwinPage(): React.JSX.Element {
               style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem" }}
               onClick={() => setViewFormat("3D")}
             >
-              🌐 3D Interactive WebGL
+              3D Interactive WebGL
             </button>
             <button
               type="button"
@@ -134,7 +134,7 @@ export function DigitalTwinPage(): React.JSX.Element {
               style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem" }}
               onClick={() => setViewFormat("2D")}
             >
-              📐 2D Blueprint Schematic
+              2D Blueprint Schematic
             </button>
           </div>
 
@@ -145,7 +145,7 @@ export function DigitalTwinPage(): React.JSX.Element {
             onClick={() => setIsDaytime((d) => !d)}
             title="Toggle polar daylight / polar night lighting"
           >
-            {isDaytime ? "☀️ Solar High Noon" : "🌌 Polar Night"}
+            {isDaytime ? "Solar High Noon" : "Polar Night"}
           </button>
 
           <button
@@ -155,7 +155,7 @@ export function DigitalTwinPage(): React.JSX.Element {
             onClick={toggleFullscreen}
             title="Toggle Fullscreen Twin Mode"
           >
-            {isFullscreen ? "🗗 Exit Fullscreen" : "⛶ Fullscreen"}
+            {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           </button>
         </div>
       </header>
@@ -196,12 +196,6 @@ export function DigitalTwinPage(): React.JSX.Element {
                   transition: "all 0.15s ease",
                 }}
               >
-                {mode === "NORMAL" && "● "}
-                {mode === "X-RAY" && "👁 "}
-                {mode === "SYSTEM" && "⚡ "}
-                {mode === "HEAT MAP" && "🔥 "}
-                {mode === "FORECAST" && "📈 "}
-                {mode === "REPLAY" && "⏪ "}
                 {mode}
               </button>
             );
@@ -233,7 +227,7 @@ export function DigitalTwinPage(): React.JSX.Element {
           }}
         >
           <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--green)" }}>
-            ⏪ Historical Replay Timeline:
+            Historical Replay Timeline:
           </span>
           <button
             type="button"
@@ -241,7 +235,7 @@ export function DigitalTwinPage(): React.JSX.Element {
             style={{ padding: "0.2rem 0.6rem", fontSize: "0.75rem" }}
             onClick={() => setIsReplayPlaying((p) => !p)}
           >
-            {isReplayPlaying ? "⏸ Pause" : "▶ Play"}
+            {isReplayPlaying ? "Pause" : "Play"}
           </button>
           <input
             type="range"
@@ -278,17 +272,19 @@ export function DigitalTwinPage(): React.JSX.Element {
         <div
           className="station-canvas"
           style={{
-            background: "var(--surface)",
+            background: "#09101a",
             border: "1px solid var(--border)",
             borderRadius: "8px",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
+            height: "820px",
             padding: 0,
+            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.12)",
           }}
         >
           {viewFormat === "3D" ? (
-            <div style={{ flex: 1, minHeight: "720px", height: "760px", position: "relative" }}>
+            <div style={{ width: "100%", height: "820px", position: "relative" }}>
               <Station3DCanvas
                 stationId={stationId}
                 twinState={twinState}
@@ -316,7 +312,7 @@ export function DigitalTwinPage(): React.JSX.Element {
             <div style={{ padding: "1.25rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                 <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text)" }}>
-                  📐 2D Physical Blueprint Schematic
+                  2D Physical Blueprint Schematic
                 </div>
                 <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                   Select any asset to inspect telemetry & downstream dependency impact
@@ -370,7 +366,7 @@ export function DigitalTwinPage(): React.JSX.Element {
                             borderRadius: "2px",
                           }}
                         >
-                          ⚠ CASCADE IMPACTED
+                          CASCADE IMPACTED
                         </div>
                       )}
 
@@ -400,7 +396,7 @@ export function DigitalTwinPage(): React.JSX.Element {
               }}
             >
               <div style={{ fontWeight: 700, color: "var(--critical, #b33a3a)" }}>
-                ⚡ Cascade Impact Analysis for {selectedAsset?.name}:
+                Cascade Impact Analysis for {selectedAsset?.name}:
               </div>
               <p style={{ margin: "0.3rem 0", color: "var(--text)" }}>
                 A failure in this asset directly propagates downstream to{" "}
@@ -512,7 +508,7 @@ export function DigitalTwinPage(): React.JSX.Element {
               {/* Live Telemetry Properties */}
               <div style={{ marginBottom: "1.25rem" }}>
                 <div style={{ fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem", color: "var(--text)" }}>
-                  📡 Live Telemetry Properties ({Object.keys(selectedAsset.currentTelemetry).length})
+                  Live Telemetry Properties ({Object.keys(selectedAsset.currentTelemetry).length})
                 </div>
                 {Object.keys(selectedAsset.currentTelemetry).length === 0 ? (
                   <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
@@ -564,7 +560,6 @@ export function DigitalTwinPage(): React.JSX.Element {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem" }}>
-                  <span style={{ fontSize: "0.9rem" }}>🤖</span>
                   <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--green)" }}>
                     Ask the Twin Copilot
                   </span>
@@ -586,7 +581,7 @@ export function DigitalTwinPage(): React.JSX.Element {
                       )
                     }
                   >
-                    💬 "Why is {selectedAsset.name} health at {selectedAsset.healthScore}%?"
+                    "Why is {selectedAsset.name} health at {selectedAsset.healthScore}%?"
                   </button>
                   <button
                     type="button"
@@ -604,7 +599,7 @@ export function DigitalTwinPage(): React.JSX.Element {
                       )
                     }
                   >
-                    ⚡ "What if this asset fails right now?"
+                    "What if this asset fails right now?"
                   </button>
                 </div>
               </div>

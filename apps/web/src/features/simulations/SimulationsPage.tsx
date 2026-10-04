@@ -79,56 +79,56 @@ const SUPPORTED_SCENARIOS: ScenarioDefinition[] = [
     title: "Primary Generator Trip & Rapid Discharge",
     category: "ENERGY",
     description: "Alternator trip drives emergency battery deep-discharge and water intake pipeline freeze hazard.",
-    icon: "⚡",
+    icon: "",
   },
   {
     type: "BATTERY_DEGRADATION",
     title: "Battery Sub-Zero Degradation",
     category: "ENERGY",
     description: "Extreme cold capacity derating, internal cell resistance surge, and reduced microgrid reserve.",
-    icon: "🔋",
+    icon: "",
   },
   {
     type: "FUEL_SHORTAGE",
     title: "Polar Diesel Storage Shortage",
     category: "LOGISTICS",
     description: "Bulk tankage loss plunging station fuel reserves past the 45-day winter emergency survival window.",
-    icon: "🛢️",
+    icon: "",
   },
   {
     type: "EXTREME_COLD",
     title: "Polar Chill Vortex (-45°C)",
     category: "ENVIRONMENT",
     description: "Building envelope thermal conduction surge and generator heating electrical demand spike.",
-    icon: "❄️",
+    icon: "",
   },
   {
     type: "HIGH_WIND",
     title: "Category 5 Blizzard (>48 m/s)",
     category: "ENVIRONMENT",
     description: "Turbine mechanical storm brake engagement, solar array snow blinding, and station red lockdown.",
-    icon: "🌪️",
+    icon: "",
   },
   {
     type: "LOAD_REDUCTION",
     title: "Demand Response & Load Shedding",
     category: "OPERATIONS",
     description: "Intentional non-essential science load curtailment expanding generator reserve margin.",
-    icon: "📉",
+    icon: "",
   },
   {
     type: "BACKUP_GEN_ACTIVATION",
     title: "Standby Generator Synchronization",
     category: "INFRASTRUCTURE",
     description: "Autonomous secondary generator start-up and parallel bus synchronization to secure N+1 redundancy.",
-    icon: "🔄",
+    icon: "",
   },
   {
     type: "COMMUNICATION_OUTAGE",
     title: "Satellite Blackout & Edge Store-and-Forward",
     category: "COMMS",
     description: "Geomagnetic storm transponder fade triggering autonomous local SSD store-and-forward telemetry queuing.",
-    icon: "📡",
+    icon: "",
   },
 ];
 
@@ -529,7 +529,7 @@ export function SimulationsPage(): React.JSX.Element {
             onClick={() => setActiveTab("resilience")}
             id="tab-resilience-engine"
           >
-            ⚡ What-If Resilience Engine
+            What-If Resilience Engine
           </button>
           <button
             className={`btn ${activeTab === "multi-hazard" ? "btn--primary" : "btn--outline"}`}
@@ -541,14 +541,14 @@ export function SimulationsPage(): React.JSX.Element {
             }}
             id="tab-multi-hazard"
           >
-            🌪 Multi-Hazard Composer
+            Multi-Hazard Composer
           </button>
           <button
             className={`btn ${activeTab === "sandbox" ? "btn--primary" : "btn--outline"}`}
             onClick={() => setActiveTab("sandbox")}
             id="tab-comms-sandbox"
           >
-            📡 Comms & Anomaly Sandbox
+            Comms & Anomaly Sandbox
           </button>
         </div>
       </header>
@@ -635,7 +635,6 @@ export function SimulationsPage(): React.JSX.Element {
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span className="sim-scenario-card__category">{sc.category}</span>
-                        <span style={{ fontSize: "1.2rem" }}>{sc.icon}</span>
                       </div>
                       <h3 className="sim-scenario-card__title">{sc.title}</h3>
                     </div>
@@ -894,7 +893,7 @@ export function SimulationsPage(): React.JSX.Element {
               <div className="card">
                 <div className="card-header">
                   <div>
-                    <h2 className="card-title">⚖ Baseline vs. Counterfactual Comparison Matrix</h2>
+                    <h2 className="card-title">Baseline vs. Counterfactual Comparison Matrix</h2>
                     <span className="card-subtitle">
                       Quantified delta between current live Digital Twin state and simulated counterfactual
                     </span>
@@ -958,7 +957,7 @@ export function SimulationsPage(): React.JSX.Element {
               <div className="card">
                 <div className="card-header">
                   <div>
-                    <h2 className="card-title">🕸 Dependency Blast-Radius & Cascading Impact Propagation</h2>
+                    <h2 className="card-title">Dependency Blast-Radius & Cascading Impact Propagation</h2>
                     <span className="card-subtitle">
                       Direct and indirect multi-domain subsystems impacted via TwinDependencyGraph
                     </span>
@@ -1046,7 +1045,7 @@ export function SimulationsPage(): React.JSX.Element {
                 {/* Causal Narrative */}
                 <div className="card">
                   <div className="card-header">
-                    <h2 className="card-title">📖 Plain-Language Causal Narrative Dossier</h2>
+                    <h2 className="card-title">Plain-Language Causal Narrative Dossier</h2>
                     <span className="card-subtitle">Physics and thermodynamic mechanics analysis</span>
                   </div>
                   <div style={{ padding: "0.5rem 0", lineHeight: 1.6, fontSize: "0.85rem", color: "var(--text)" }}>
@@ -1067,7 +1066,7 @@ export function SimulationsPage(): React.JSX.Element {
                 {/* Recovery Action Plan */}
                 <div className="card">
                   <div className="card-header">
-                    <h2 className="card-title">🛠 Actionable Mitigation & Recovery Protocol</h2>
+                    <h2 className="card-title">Actionable Mitigation & Recovery Protocol</h2>
                     <span className="card-subtitle">Recommended operational procedures for Antarctic team</span>
                   </div>
                   <div style={{ padding: "0.5rem 0" }}>
@@ -1092,7 +1091,7 @@ export function SimulationsPage(): React.JSX.Element {
               {currentResult.impactedAssets.length > 0 && (
                 <div className="card">
                   <div className="card-header">
-                    <h2 className="card-title">⚙ Impacted Equipment Inventory ({currentResult.impactedAssets.length} Assets)</h2>
+                    <h2 className="card-title">Impacted Equipment Inventory ({currentResult.impactedAssets.length} Assets)</h2>
                     <span className="card-subtitle">Physical plant health degradation and failure modes</span>
                   </div>
 
@@ -1155,7 +1154,7 @@ export function SimulationsPage(): React.JSX.Element {
               {history.length > 1 && (
                 <div className="card">
                   <div className="card-header">
-                    <h2 className="card-title">📜 Historical Simulation Runs for {isMaitri ? "Maitri" : "Bharati"}</h2>
+                    <h2 className="card-title">Historical Simulation Runs for {isMaitri ? "Maitri" : "Bharati"}</h2>
                     <span className="card-subtitle">Stored in simulation memory repository</span>
                   </div>
 
@@ -1248,7 +1247,7 @@ export function SimulationsPage(): React.JSX.Element {
           {/* Preset Selection Grid */}
           <div className="card" style={{ marginBottom: "1.25rem" }}>
             <div className="card-header">
-              <h2 className="card-title">🌪 Pre-Configured Multi-Hazard Scenarios</h2>
+              <h2 className="card-title">Pre-Configured Multi-Hazard Scenarios</h2>
               <span className="card-subtitle">Validated multi-condition Antarctic stress tests</span>
             </div>
 
@@ -1314,7 +1313,7 @@ export function SimulationsPage(): React.JSX.Element {
           {/* Custom Hazard Condition Composer */}
           <div className="card" style={{ marginBottom: "1.25rem" }}>
             <div className="card-header">
-              <h2 className="card-title">⚙ Custom Multi-Condition Composer</h2>
+              <h2 className="card-title">Custom Multi-Condition Composer</h2>
               <span className="card-subtitle">Synthesize custom concurrent stressors</span>
             </div>
 
@@ -1328,7 +1327,7 @@ export function SimulationsPage(): React.JSX.Element {
                     setCustomMultiConditions({ ...customMultiConditions, genTrip: e.target.checked });
                   }}
                 />
-                ⚡ Primary Generator Trip
+                Primary Generator Trip
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
@@ -1340,7 +1339,7 @@ export function SimulationsPage(): React.JSX.Element {
                     setCustomMultiConditions({ ...customMultiConditions, extremeCold: e.target.checked });
                   }}
                 />
-                ❄ Polar Chill Vortex (-45°C)
+                Polar Chill Vortex (-45°C)
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
@@ -1352,7 +1351,7 @@ export function SimulationsPage(): React.JSX.Element {
                     setCustomMultiConditions({ ...customMultiConditions, commsOutage: e.target.checked });
                   }}
                 />
-                📡 Satellite Blackout
+                Satellite Blackout
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
@@ -1364,7 +1363,7 @@ export function SimulationsPage(): React.JSX.Element {
                     setCustomMultiConditions({ ...customMultiConditions, fuelLoss: e.target.checked });
                   }}
                 />
-                🛢 Bulk Fuel Tank Breach
+                Bulk Fuel Tank Breach
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
@@ -1376,7 +1375,7 @@ export function SimulationsPage(): React.JSX.Element {
                     setCustomMultiConditions({ ...customMultiConditions, highWind: e.target.checked });
                   }}
                 />
-                🌪 Blizzard Gale (&gt;48 m/s)
+                Blizzard Gale (&gt;48 m/s)
               </label>
 
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
@@ -1388,7 +1387,7 @@ export function SimulationsPage(): React.JSX.Element {
                     setCustomMultiConditions({ ...customMultiConditions, batteryDegradation: e.target.checked });
                   }}
                 />
-                🔋 Battery Sub-Zero Degradation
+                Battery Sub-Zero Degradation
               </label>
             </div>
 
@@ -1416,7 +1415,7 @@ export function SimulationsPage(): React.JSX.Element {
                 disabled={isMultiHazardRunning}
                 id="btn-run-custom-multihazard"
               >
-                {isMultiHazardRunning ? "Simulating Compound Cascades…" : "▶ Execute Custom Compound Simulation"}
+                {isMultiHazardRunning ? "Simulating Compound Cascades…" : "Execute Custom Compound Simulation"}
               </button>
             </div>
           </div>
@@ -1428,7 +1427,7 @@ export function SimulationsPage(): React.JSX.Element {
               <div className="card" style={{ borderLeft: "4px solid var(--critical)" }}>
                 <div className="card-header">
                   <h2 className="card-title" style={{ color: "var(--critical)" }}>
-                    ⚡ Compound Multi-Hazard Interactions Detected ({multiHazardResult.compoundInteractions.length})
+                    Compound Multi-Hazard Interactions Detected ({multiHazardResult.compoundInteractions.length})
                   </h2>
                   <span className="card-subtitle">Synergistic stress amplifiers beyond single-fault models</span>
                 </div>
@@ -1490,7 +1489,7 @@ export function SimulationsPage(): React.JSX.Element {
               {/* Assumption Inspector */}
               <div className="card">
                 <div className="card-header">
-                  <h2 className="card-title">🔬 Assumption Inspector & Physical Constants</h2>
+                  <h2 className="card-title">Assumption Inspector & Physical Constants</h2>
                   <span className="card-subtitle">Documented engineering bounds and thermodynamic constraints</span>
                 </div>
                 <div style={{ marginTop: "0.75rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "0.6rem" }}>
@@ -1516,7 +1515,7 @@ export function SimulationsPage(): React.JSX.Element {
               {/* Recovery Action Plan */}
               <div className="card">
                 <div className="card-header">
-                  <h2 className="card-title">🛠 Compound Recovery & Mitigation Protocol</h2>
+                  <h2 className="card-title">Compound Recovery & Mitigation Protocol</h2>
                   <span className="card-subtitle">Autonomous & operator procedures for concurrent disruption</span>
                 </div>
                 <div style={{ padding: "0.5rem 0" }}>
@@ -1589,7 +1588,7 @@ export function SimulationsPage(): React.JSX.Element {
             {/* Link Connectivity Control */}
             <div className="card">
               <div className="card-header">
-                <h2 className="card-title">📡 Satellite Link Connectivity Simulation</h2>
+                <h2 className="card-title">Satellite Link Connectivity Simulation</h2>
                 <span className="card-subtitle">Simulate real polar communications disruptions</span>
               </div>
 
@@ -1624,7 +1623,7 @@ export function SimulationsPage(): React.JSX.Element {
             {/* Anomaly Preset Injections */}
             <div className="card">
               <div className="card-header">
-                <h2 className="card-title">⚡ Synthetic Anomaly Preset Injections</h2>
+                <h2 className="card-title">Synthetic Anomaly Preset Injections</h2>
                 <span className="card-subtitle">Trigger targeted system disruptions</span>
               </div>
 
@@ -1656,35 +1655,35 @@ export function SimulationsPage(): React.JSX.Element {
                   onClick={() => triggerAnomaly("COOLANT_SPIKE")}
                   style={{ textAlign: "left", justifyContent: "flex-start" }}
                 >
-                  🔥 Coolant Temperature Surge (+25°C in 60s on Primary Generator)
+                  Coolant Temperature Surge (+25°C in 60s on Primary Generator)
                 </button>
                 <button
                   className="btn btn--outline"
                   onClick={() => triggerAnomaly("SOLAR_DROP")}
                   style={{ textAlign: "left", justifyContent: "flex-start" }}
                 >
-                  ⛅ Solar Array Obscuration (Simulated Blizzard Snow Cover)
+                  Solar Array Obscuration (Simulated Blizzard Snow Cover)
                 </button>
                 <button
                   className="btn btn--outline"
                   onClick={() => triggerAnomaly("FUEL_LEAK")}
                   style={{ textAlign: "left", justifyContent: "flex-start" }}
                 >
-                  ⛽ Abnormal Fuel Consumption Spike (Simulated Transfer Leak)
+                  Abnormal Fuel Consumption Spike (Simulated Transfer Leak)
                 </button>
                 <button
                   className="btn btn--outline"
                   onClick={() => triggerAnomaly("WATER_FREEZE")}
                   style={{ textAlign: "left", justifyContent: "flex-start" }}
                 >
-                  🧊 Lake Water Intake Line Freeze (Temperature Drop to -2°C)
+                  Lake Water Intake Line Freeze (Temperature Drop to -2°C)
                 </button>
                 <button
                   className="btn btn--outline"
                   onClick={() => triggerAnomaly("STORM_SURGE")}
                   style={{ textAlign: "left", justifyContent: "flex-start" }}
                 >
-                  🌪 Severe Katabatic Wind Gust (Blizzard Warning Trigger)
+                  Severe Katabatic Wind Gust (Blizzard Warning Trigger)
                 </button>
               </div>
             </div>

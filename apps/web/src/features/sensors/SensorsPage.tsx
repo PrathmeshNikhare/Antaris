@@ -204,7 +204,7 @@ export function SensorsPage(): React.JSX.Element {
           style={{ fontSize: "0.8rem", border: "1px solid var(--border)" }}
           onClick={() => navigate("/twin")}
         >
-          🌐 View in 3D Digital Twin →
+          View in 3D Digital Twin →
         </button>
       </header>
 

@@ -56,7 +56,7 @@ export function InfrastructurePage(): React.JSX.Element {
       {/* Asset Hierarchy Table */}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <div className="card-header">
-          <h2 className="card-title">⚙️ Subsystem Assets ({filteredAssets.length})</h2>
+          <h2 className="card-title">Subsystem Assets ({filteredAssets.length})</h2>
           <span className="card-subtitle">Real-time health telemetry & threshold adherence</span>
         </div>
 
@@ -142,7 +142,7 @@ export function InfrastructurePage(): React.JSX.Element {
       <div className="card">
         <div className="card-header">
           <div>
-            <h2 className="card-title">🔧 Maintenance Log & Overhaul Records</h2>
+            <h2 className="card-title">Maintenance Log & Overhaul Records</h2>
             <span className="card-subtitle">Scheduled and completed physical maintenance events</span>
           </div>
           <span className="badge badge--info">{maintenanceEvents.length} Recorded</span>

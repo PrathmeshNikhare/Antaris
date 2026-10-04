@@ -6,7 +6,7 @@ const DEMO_SCENARIOS = [
   {
     id: "generator-anomaly",
     title: "Generator Anomaly",
-    icon: "⚡",
+    icon: "",
     description: "GEN-01 overtemperature spike & power degradation",
     preset: "generator-trip",
     category: "INFRASTRUCTURE",
@@ -15,7 +15,7 @@ const DEMO_SCENARIOS = [
   {
     id: "battery-degradation",
     title: "Battery Degradation",
-    icon: "🔋",
+    icon: "",
     description: "Sub-zero capacity loss in battery bank",
     preset: "battery-degradation",
     category: "ENERGY",
@@ -24,7 +24,7 @@ const DEMO_SCENARIOS = [
   {
     id: "fuel-reduction",
     title: "Fuel Shortage",
-    icon: "⛽",
+    icon: "",
     description: "Critical polar diesel reserve reduction",
     preset: "fuel-reduction",
     category: "LOGISTICS",
@@ -33,7 +33,7 @@ const DEMO_SCENARIOS = [
   {
     id: "extreme-cold",
     title: "Extreme Cold (-45°C)",
-    icon: "❄️",
+    icon: "",
     description: "Deep polar cold snap — thermal load surge",
     preset: "extreme-cold",
     category: "ENVIRONMENT",
@@ -42,7 +42,7 @@ const DEMO_SCENARIOS = [
   {
     id: "high-wind",
     title: "Blizzard (48 m/s)",
-    icon: "🌬️",
+    icon: "",
     description: "Category 5 storm — turbine lockout",
     preset: "high-wind",
     category: "ENVIRONMENT",
@@ -51,7 +51,7 @@ const DEMO_SCENARIOS = [
   {
     id: "comm-outage",
     title: "Comms Outage",
-    icon: "📡",
+    icon: "",
     description: "Satellite transponder blackout — store & forward",
     preset: "comm-outage",
     category: "COMMS",
@@ -66,56 +66,56 @@ const DEMO_FLOW_STEPS = [
     title: "Normal Operations",
     description: "Station Maitri is operating normally. All systems green.",
     action: "reset",
-    icon: "✅",
+    icon: "1",
   },
   {
     step: 2,
     title: "Inject Generator Anomaly",
     description: "GEN-01 develops an overtemperature anomaly. Watch Twin state transition.",
     action: "inject-generator",
-    icon: "⚡",
+    icon: "2",
   },
   {
     step: 3,
     title: "Observe Twin Transition",
     description: "Navigate to Digital Twin → see DEGRADED state, anomaly detection, cascading impact.",
     action: "navigate-twin",
-    icon: "❖",
+    icon: "3",
   },
   {
     step: 4,
     title: "Intelligence Explains",
     description: "Check Intelligence tab for anomaly analysis, cross-domain risk, and recommendations.",
     action: "navigate-intelligence",
-    icon: "◈",
+    icon: "4",
   },
   {
     step: 5,
     title: "Run What-If Simulation",
     description: "Simulate GEN-01 failure for 2 hours. See blast radius and recovery plan.",
     action: "navigate-simulations",
-    icon: "▷",
+    icon: "5",
   },
   {
     step: 6,
     title: "Ask the Copilot",
     description: "\"Why is GEN-01 at risk?\" — Get evidence-backed AI explanation.",
     action: "navigate-copilot",
-    icon: "◈",
+    icon: "6",
   },
   {
     step: 7,
     title: "Communication Outage",
     description: "Trigger satellite outage. Observe store-and-forward buffering.",
     action: "inject-comms",
-    icon: "📡",
+    icon: "7",
   },
   {
     step: 8,
     title: "Recovery & Audit",
     description: "Restore normal state. Check audit trail for all actions taken.",
     action: "reset-and-audit",
-    icon: "📋",
+    icon: "8",
   },
 ];
 
@@ -226,7 +226,7 @@ export function DemoControlPage(): React.JSX.Element {
       <div className="demo-header">
         <div className="demo-header-left">
           <h1 className="page-title">
-            <span style={{ fontSize: "1.3rem" }}>🎮</span> Demo Control Panel
+            Demo Control Panel
           </h1>
           <p className="page-subtitle">
             SIH Demonstration — Inject scenarios, control connectivity, run guided demo flow
@@ -244,7 +244,7 @@ export function DemoControlPage(): React.JSX.Element {
             onClick={resetToNormal}
             disabled={isInjecting}
           >
-            🔄 Reset All
+            Reset All
           </button>
         </div>
       </div>
@@ -283,7 +283,6 @@ export function DemoControlPage(): React.JSX.Element {
                 disabled={isInjecting}
                 style={{ "--scenario-color": scenario.color } as React.CSSProperties}
               >
-                <span className="demo-scenario-icon">{scenario.icon}</span>
                 <div className="demo-scenario-info">
                   <span className="demo-scenario-title">{scenario.title}</span>
                   <span className="demo-scenario-desc">{scenario.description}</span>
@@ -303,7 +302,7 @@ export function DemoControlPage(): React.JSX.Element {
                 onClick={() => setConnectivity(state)}
                 disabled={isInjecting}
               >
-                {state === "NORMAL" ? "🟢" : state === "DEGRADED" ? "🟡" : "🔴"} {state}
+                {state}
               </button>
             ))}
           </div>
@@ -323,7 +322,7 @@ export function DemoControlPage(): React.JSX.Element {
                 >
                   <div className="demo-flow-step-marker">
                     <span className="demo-flow-step-number">
-                      {idx < currentStep ? "✓" : step.icon}
+                      {idx < currentStep ? "✓" : step.step}
                     </span>
                   </div>
                   <div className="demo-flow-step-content">

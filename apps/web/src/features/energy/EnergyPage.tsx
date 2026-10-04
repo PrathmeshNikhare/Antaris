@@ -81,7 +81,7 @@ export function EnergyPage(): React.JSX.Element {
         {/* Power Flow Breakdown */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">⚡ Power Generation & Load Balance</h2>
+            <h2 className="card-title">Power Generation & Load Balance</h2>
             <span className="card-subtitle">Real-time kW dispatch</span>
           </div>
 
@@ -128,7 +128,7 @@ export function EnergyPage(): React.JSX.Element {
               fontSize: "0.8rem",
             }}
           >
-            <strong>🔌 Critical Loads Dependent on Generator:</strong>
+            <strong>Critical Loads Dependent on Generator:</strong>
             <ul style={{ paddingLeft: "1.2rem", marginTop: "0.3rem", color: "var(--text)" }}>
               <li>Life Support & Habitat Central HVAC (45 kW)</li>
               <li>Lake Priyadarshini Water Intake Heating Traces (12 kW)</li>
@@ -141,7 +141,7 @@ export function EnergyPage(): React.JSX.Element {
         {/* Fuel & Energy Reserves */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">⛽ Arctic Diesel Reserves & Autonomy</h2>
+            <h2 className="card-title">Arctic Diesel Reserves & Autonomy</h2>
             <span className="card-subtitle">Strategic fuel stocks</span>
           </div>
 
@@ -180,7 +180,7 @@ export function EnergyPage(): React.JSX.Element {
               fontSize: "0.8rem",
             }}
           >
-            <div style={{ fontWeight: 600, color: "var(--text)" }}>🛡️ Risk & Contamination Safeguards:</div>
+            <div style={{ fontWeight: 600, color: "var(--text)" }}>Risk & Contamination Safeguards:</div>
             <p style={{ margin: "0.25rem 0 0 0", color: "var(--text-muted)" }}>
               Double-walled heated bulk storage tanks located 120m from main habitat. Heated trace lines prevent gelation at -40°C.
             </p>

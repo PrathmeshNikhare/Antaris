@@ -165,16 +165,16 @@ export function ReportsPage(): React.JSX.Element {
             </span>
           )}
           <button className="button button--ghost" onClick={handleCaptureSnapshot} disabled={loading}>
-            📷 Capture Snapshot
+            Capture Snapshot
           </button>
           <button className="button button--ghost" onClick={handleExportJson}>
-            💾 Export JSON
+            Export JSON
           </button>
           <button className="button button--ghost" onClick={handleExportCsv}>
-            📊 Export CSV
+            Export CSV
           </button>
           <button className="button button--primary" onClick={handlePrintPdf}>
-            📄 Print / Save A4 PDF
+            Print / Save A4 PDF
           </button>
         </div>
       </header>

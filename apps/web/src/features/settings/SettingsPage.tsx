@@ -126,7 +126,7 @@ export function SettingsPage(): React.JSX.Element {
         }}
       >
         <div style={{ fontSize: "0.85rem", fontWeight: 700, marginBottom: "0.75rem", color: "var(--text)" }}>
-          📍 Station Operational Identity & Coordinates
+          Station Operational Identity & Coordinates
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", fontSize: "0.8rem" }}>
@@ -176,7 +176,7 @@ export function SettingsPage(): React.JSX.Element {
         >
           <span>PHYSICAL SENSOR THRESHOLDS & ALARM CEILINGS</span>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 500 }}>
-            {hasRole("ADMIN", "ENGINEER") ? "✏️ Click row to modify safety limits" : "🔒 Read-only view (Engineer/Admin role required to edit)"}
+            {hasRole("ADMIN", "ENGINEER") ? "Click row to modify safety limits" : "Read-only view (Engineer/Admin role required to edit)"}
           </span>
         </div>
 

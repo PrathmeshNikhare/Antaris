@@ -86,7 +86,7 @@ export function OverviewPage(): React.JSX.Element {
         {/* Energy KPI */}
         <div className="kpi-tile">
           <div className="kpi-tile__label">
-            <span>⚡ Energy Generation & Load</span>
+            <span>Energy Generation & Load</span>
             <span className="badge badge--operational">{energy.gridStatus}</span>
           </div>
           <div className="kpi-tile__value">
@@ -104,7 +104,7 @@ export function OverviewPage(): React.JSX.Element {
         {/* Infrastructure KPI */}
         <div className="kpi-tile">
           <div className="kpi-tile__label">
-            <span>⚙ Infrastructure Health</span>
+            <span>Infrastructure Health</span>
             <span className="badge badge--info">{assets.length} Total</span>
           </div>
           <div className="kpi-tile__value">
@@ -120,7 +120,7 @@ export function OverviewPage(): React.JSX.Element {
         {/* Logistics KPI */}
         <div className="kpi-tile">
           <div className="kpi-tile__label">
-            <span>📦 Logistics Autonomy</span>
+            <span>Logistics Autonomy</span>
             <span className="badge badge--operational">
               {logistics.daysOfFuelRemaining > 30 ? "SECURE" : "LOW"}
             </span>
@@ -138,7 +138,7 @@ export function OverviewPage(): React.JSX.Element {
         {/* Environment KPI */}
         <div className="kpi-tile">
           <div className="kpi-tile__label">
-            <span>❄ Meteorological Condition</span>
+            <span>Meteorological Condition</span>
             <span className={`badge ${environment.condition === "NORMAL" ? "badge--operational" : "badge--warning"}`}>
               {environment.condition}
             </span>
@@ -160,7 +160,7 @@ export function OverviewPage(): React.JSX.Element {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">❖ Digital Twin Operational Topology</h2>
+              <h2 className="card-title">Digital Twin Operational Topology</h2>
               <span className="card-subtitle">
                 Live interactive schematic showing subsystem health rings and dependency cascade links.
               </span>
@@ -232,7 +232,7 @@ export function OverviewPage(): React.JSX.Element {
           {/* Operational Risk */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title">🛡️ Station Risk Assessment</h2>
+              <h2 className="card-title">Station Risk Assessment</h2>
               <span
                 className={`badge ${
                   operationalRisk.level === "LOW"
@@ -263,7 +263,7 @@ export function OverviewPage(): React.JSX.Element {
           {/* Real-time WebSocket Event Stream */}
           <div className="card" style={{ flex: 1 }}>
             <div className="card-header">
-              <h2 className="card-title">⚡ Live Operational Events</h2>
+              <h2 className="card-title">Live Operational Events</h2>
               <span className="badge badge--info" style={{ fontSize: "0.65rem" }}>
                 WS Stream
               </span>
@@ -292,7 +292,7 @@ export function OverviewPage(): React.JSX.Element {
       <div className="card">
         <div className="card-header">
           <div>
-            <h2 className="card-title">⚠️ Active Alerts & Incident Response Console</h2>
+            <h2 className="card-title">Active Alerts & Incident Response Console</h2>
             <span className="card-subtitle">
               Verified operational anomalies requiring operator attention and mitigation.
             </span>

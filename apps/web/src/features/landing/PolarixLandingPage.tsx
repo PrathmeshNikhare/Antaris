@@ -374,7 +374,7 @@ export function PolarixLandingPage(): React.JSX.Element {
           paddingBottom: "2rem",
         }}
       >
-        {/* Brand Title: POLARIX */}
+        {/* Brand Title: ANTARIS */}
         <h1
           style={{
             fontSize: "clamp(3.8rem, 8vw, 5.8rem)",
@@ -390,7 +390,7 @@ export function PolarixLandingPage(): React.JSX.Element {
             fontFamily: "var(--font-sans, -apple-system, sans-serif)",
           }}
         >
-          POLARIX
+          ANTARIS
         </h1>
 
         {/* Subtitle: — ANTARCTIC DIGITAL TWIN — */}
@@ -699,7 +699,7 @@ export function PolarixLandingPage(): React.JSX.Element {
           }}
         >
           <span style={{ color: "#38bdf8", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-            <span>📶</span> SATELLITE L-BAND // 1420.4 MHz
+            SATELLITE L-BAND // 1420.4 MHz
           </span>
           <span style={{ color: "#cbd5e1" }}>{utcTime || "UTC --:--:--"}</span>
         </div>

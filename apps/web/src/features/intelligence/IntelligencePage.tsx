@@ -158,7 +158,7 @@ export function IntelligencePage(): React.JSX.Element {
         </div>
 
         <button className="btn btn--secondary" onClick={loadIntelligence} style={{ fontSize: "0.8rem", padding: "0.4rem 0.8rem" }}>
-          🔄 Recalculate Models
+          Recalculate Models
         </button>
       </header>
 
@@ -233,12 +233,12 @@ export function IntelligencePage(): React.JSX.Element {
         }}
       >
         {[
-          { key: "CASCADE", label: "⚡ Causal Cascade Graph", badge: crossDomainRisk?.cascades.length },
-          { key: "ANOMALIES", label: "🔍 Anomaly & Evidence", badge: activeAnomalies.length },
-          { key: "FORECASTS", label: "📈 24h Energy & Fuel Forecast", badge: "24h" },
-          { key: "HEALTH", label: "🩺 Asset Health Matrix", badge: assetHealthScores.length },
-          { key: "RECOMMENDATIONS", label: "💡 Advisory Recommendations", badge: recommendations.length },
-          { key: "OBSERVABILITY", label: "📊 Model Observability", badge: observability.length },
+          { key: "CASCADE", label: "Causal Cascade Graph", badge: crossDomainRisk?.cascades.length },
+          { key: "ANOMALIES", label: "Anomaly & Evidence", badge: activeAnomalies.length },
+          { key: "FORECASTS", label: "24h Energy & Fuel Forecast", badge: "24h" },
+          { key: "HEALTH", label: "Asset Health Matrix", badge: assetHealthScores.length },
+          { key: "RECOMMENDATIONS", label: "Advisory Recommendations", badge: recommendations.length },
+          { key: "OBSERVABILITY", label: "Model Observability", badge: observability.length },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -281,7 +281,7 @@ export function IntelligencePage(): React.JSX.Element {
             <div className="card-header" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>🕸️ Cross-Domain Causal Impact Chain</span>
+                  <span>Cross-Domain Causal Impact Chain</span>
                   <span
                     className={`badge ${
                       activeCascade?.riskLevel === "CRITICAL"
@@ -483,7 +483,7 @@ export function IntelligencePage(): React.JSX.Element {
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">🔍 Detected Subsystem Anomalies</h2>
+                <h2 className="card-title">Detected Subsystem Anomalies</h2>
                 <span className="card-subtitle">Hybrid rule-based and Isolation Forest detection</span>
               </div>
               <span className="badge badge--info">{activeAnomalies.length} Active</span>
@@ -561,7 +561,7 @@ export function IntelligencePage(): React.JSX.Element {
           {/* Right Evidence Inspector Drawer */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title">🔬 Explainable Evidence Dossier</h2>
+              <h2 className="card-title">Explainable Evidence Dossier</h2>
               <span className="card-subtitle">Transparent audit trail for decision-support</span>
             </div>
 
@@ -667,7 +667,7 @@ export function IntelligencePage(): React.JSX.Element {
             <div className="card-header" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>⚡ {forecastViewMode === "FORECAST" ? "24-Hour Forward Energy Demand & Generation Forecast" : "Past Measured Telemetry History (TimescaleDB)"}</span>
+                  <span>{forecastViewMode === "FORECAST" ? "24-Hour Forward Energy Demand & Generation Forecast" : "Past Measured Telemetry History (TimescaleDB)"}</span>
                   <span className="badge badge--operational" style={{ fontSize: "0.7rem" }}>
                     {forecastViewMode === "FORECAST" ? "PREDICTIVE (NEXT 24H)" : "MEASURED HISTORY"}
                   </span>
@@ -686,7 +686,7 @@ export function IntelligencePage(): React.JSX.Element {
                   style={{ fontSize: "0.75rem", padding: "0.3rem 0.7rem" }}
                   onClick={() => setForecastViewMode("FORECAST")}
                 >
-                  🔮 Next 24h Forecast
+                  Next 24h Forecast
                 </button>
                 <button
                   className={`btn ${forecastViewMode === "HISTORY" ? "btn--primary" : "btn--secondary"}`}
@@ -696,7 +696,7 @@ export function IntelligencePage(): React.JSX.Element {
                     void loadHistory();
                   }}
                 >
-                  📜 Past Telemetry History
+                  Past Telemetry History
                 </button>
               </div>
             </div>
@@ -744,7 +744,7 @@ export function IntelligencePage(): React.JSX.Element {
                 }}
               >
                 <div>
-                  <strong>📍 Hour +{hoveredForecastPoint.hourOffset}</strong> (Time:{" "}
+                  <strong>Hour +{hoveredForecastPoint.hourOffset}</strong> (Time:{" "}
                   {new Date(hoveredForecastPoint.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}{" "}
                   UTC): Predicted Demand <strong>{hoveredForecastPoint.predictedDemandKw} kW</strong>
                   <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem" }}>
@@ -753,11 +753,11 @@ export function IntelligencePage(): React.JSX.Element {
                 </div>
                 <div style={{ display: "flex", gap: "1rem" }}>
                   <span>
-                    ☀️ Solar/Wind:{" "}
+                    Solar/Wind:{" "}
                     <strong>{(hoveredForecastPoint.solarGenerationKw + hoveredForecastPoint.windGenerationKw).toFixed(1)} kW</strong>
                   </span>
                   <span>
-                    🛡️ Headroom: <strong>{hoveredForecastPoint.netReserveKw} kW</strong>
+                    Headroom: <strong>{hoveredForecastPoint.netReserveKw} kW</strong>
                   </span>
                 </div>
               </div>
@@ -942,7 +942,7 @@ export function IntelligencePage(): React.JSX.Element {
           {/* Inventory Depletion Radar */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title">📦 Commodity Inventory & Depletion Runway</h2>
+              <h2 className="card-title">Commodity Inventory & Depletion Runway</h2>
               <span className="card-subtitle">Burn rates modeled against polar winter resupply gap (180 days)</span>
             </div>
 
@@ -999,7 +999,7 @@ export function IntelligencePage(): React.JSX.Element {
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">🩺 Subsystem Asset Health Matrix</h2>
+                <h2 className="card-title">Subsystem Asset Health Matrix</h2>
                 <span className="card-subtitle">Continuous degradation and operational stress scoring</span>
               </div>
             </div>
@@ -1065,7 +1065,7 @@ export function IntelligencePage(): React.JSX.Element {
           {/* Right Penalty Breakdown Inspector */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title">📊 Health Penalty Breakdown</h2>
+              <h2 className="card-title">Health Penalty Breakdown</h2>
               <span className="card-subtitle">{selectedHealth?.assetName || "Select an asset"}</span>
             </div>
 
@@ -1136,7 +1136,7 @@ export function IntelligencePage(): React.JSX.Element {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">💡 Operational Advisory Recommendations</h2>
+              <h2 className="card-title">Operational Advisory Recommendations</h2>
               <span className="card-subtitle">Transparent, prioritized guidance generated from active intelligence</span>
             </div>
             <span className="badge badge--neutral">ADVISORY ONLY</span>
@@ -1234,7 +1234,7 @@ export function IntelligencePage(): React.JSX.Element {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">📊 Operational Model Observability & Provenance</h2>
+              <h2 className="card-title">Operational Model Observability & Provenance</h2>
               <span className="card-subtitle">Real-time execution logs, latency tracking, and confidence audits</span>
             </div>
             <span className="badge badge--operational">AUDIT LIVE</span>
