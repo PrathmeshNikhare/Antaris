@@ -1,4 +1,4 @@
-# Maitri–Bharati Digital Twin — Antigravity Build Harness
+# ANTARIX — Digital Twin framework for Maitri and Bharati stations
 
 ## Purpose
 
@@ -51,7 +51,7 @@ Do **not** clone the reference literally. Evolve it into a polar-station operati
 - `telemetry.md` — telemetry contract and simulator
 - `workflows.md` — end-to-end operational workflows
 - `phases.md` — implementation roadmap
-- `agents.md` — Antigravity agent roles
+- `agents.md` — agent roles
 - `handoff.md` — phase handoff protocol
 - `ui-ux.md` — visual system and UI rules
 - `frontend.md` — frontend implementation contract
